@@ -153,7 +153,7 @@ final class SettingsWindowController {
     func show() {
         if window == nil {
             let w = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 460, height: 560),
+                contentRect: NSRect(x: 0, y: 0, width: SettingsView.width, height: SettingsView.height),
                 styleMask: [.titled, .closable],
                 backing: .buffered,
                 defer: false

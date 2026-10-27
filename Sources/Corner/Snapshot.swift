@@ -137,6 +137,9 @@ enum Snapshot {
                 }
             }.padding(8).themed(Theme.named(.midnight)),
                    scheme: scheme, to: dir.appendingPathComponent("companions-\(suffix).png"))
+            renderWindow(SettingsView(store: previewStore(twelve), connectCalendar: {}),
+                         size: CGSize(width: SettingsView.width, height: SettingsView.height),
+                         scheme: scheme, to: dir.appendingPathComponent("settings-\(suffix).png"))
             // The corner in each corner of the screen: a timer, a companion, and the card in the bottom right.
             render(VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
@@ -304,6 +307,23 @@ enum Snapshot {
 
     /// Draws the view over a stand-in desktop so the corner reads as it does on screen.
     /// `backdrop: false` gives an unpadded image for the website: transparent, or on `fill`.
+    /// Native controls (pop-up menus, segmented pickers, forms) don't come out of ImageRenderer, so
+    /// windows like Settings are drawn by AppKit in an offscreen window instead.
+    static func renderWindow<V: View>(_ view: V, size: CGSize, scheme: ColorScheme, to url: URL) {
+        let host = NSHostingView(rootView: view.environment(\.colorScheme, scheme))
+        let window = NSWindow(contentRect: NSRect(origin: CGPoint(x: -30000, y: -30000), size: size),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+        window.contentView = host
+        window.orderFrontRegardless()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+        host.layoutSubtreeIfNeeded()
+        defer { window.orderOut(nil) }
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        try? rep.representation(using: .png, properties: [:])?.write(to: url)
+    }
+
     private static func render<V: View>(_ view: V, scheme: ColorScheme, scale: CGFloat = 2, backdrop: Bool = true,
                                         fill: Color? = nil, to url: URL) {
         let framed = view

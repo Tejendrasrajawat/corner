@@ -139,6 +139,8 @@ struct ThemeSwatch: View {
                 )
                 Text(theme.name)
                     .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
                     .foregroundStyle(selected ? Color.primary : Color.secondary)
             }
             .contentShape(Rectangle())
