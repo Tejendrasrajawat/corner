@@ -1,0 +1,12 @@
+# Build output
+.build/
+build/
+
+# Vercel link and token: never commit
+site/.vercel
+.env*
+
+# Release disk images: rebuilt by scripts/package-release.sh, uploaded by `vercel deploy`
+site/downloads/*.dmg
+
+.DS_Store

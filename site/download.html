@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Downloading Corner</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#07080d">
+  <link rel="icon" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+  <!-- Each visit to this page is one download in Vercel Web Analytics. -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    // `/download?preview` is the how-to linked from the homepage, not a download: don't count it.
+    window.va("beforeSend", function (e) { return new URL(e.url).searchParams.has("preview") ? null : e; });
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <header class="nav scrolled" id="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/" aria-label="Corner home">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="logo-ring" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="8" fill="#151826"/>
+          <path d="M5 5h17a17 17 0 0 1-17 17z" fill="rgba(255,255,255,.08)"/>
+          <path d="M5 19.5A14.5 14.5 0 0 0 19.5 5" fill="none" stroke="url(#logo-ring)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span>Corner</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container download-page">
+    <div class="download-head">
+      <div class="spinner" aria-hidden="true"></div>
+      <h1>Your download is starting</h1>
+      <p>If it doesn't, <a id="fallback" href="/downloads/Corner.dmg" download="Corner-1.2.dmg">download Corner-1.2.dmg</a> (2.0 MB). Then three quick steps:</p>
+    </div>
+
+    <ol class="how">
+      <li>
+        <span class="num">1</span>
+        <h3>Drag to Applications</h3>
+        <p>Open the downloaded file and drag Corner onto Applications.</p>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <h3>Allow it once</h3>
+        <p>Corner isn't notarized by Apple yet, so the first time you open it macOS says it can't verify it. <a href="#verify">Three clicks</a> and it won't ask again.</p>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <h3>Look top-left</h3>
+        <p>Corner lives under the Apple menu, with a timer icon in the menu bar. Press <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> to add your first timer.</p>
+      </li>
+    </ol>
+
+    <section class="verify" id="verify" aria-labelledby="verify-title">
+      <h2 id="verify-title">If macOS says “Apple could not verify Corner”</h2>
+      <p class="verify-lede">That's macOS being careful with an app Apple hasn't notarized. Allow Corner once:</p>
+      <ol class="verify-steps">
+        <li>
+          <div class="mac-window mac-dialog" aria-hidden="true">
+            <img src="/img/icon.png" width="44" height="44" alt="">
+            <b>“Corner” Not Opened</b>
+            <p>Apple could not verify “Corner” is free of malware that may harm your Mac or compromise your privacy.</p>
+            <span class="mac-btns"><span class="mac-btn is-target">Done</span><span class="mac-btn">Move to Trash</span></span>
+          </div>
+          <h3><span class="step">1</span> Click Done</h3>
+          <p>Not Move to Trash: Corner stays in Applications.</p>
+        </li>
+        <li>
+          <div class="mac-window mac-settings" aria-hidden="true">
+            <span class="mac-settings-title">Privacy &amp; Security</span>
+            <span class="mac-settings-head">Security</span>
+            <span class="mac-settings-row"><span>“Corner” was blocked to protect your Mac.</span><span class="mac-btn is-target">Open Anyway</span></span>
+          </div>
+          <h3><span class="step">2</span> Open Anyway</h3>
+          <p>Open <a href="x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension">System Settings → Privacy &amp; Security</a>, scroll down to Security, and click <b>Open Anyway</b> next to Corner.</p>
+        </li>
+        <li>
+          <div class="mac-window mac-dialog" aria-hidden="true">
+            <img src="/img/icon.png" width="44" height="44" alt="">
+            <b>Open “Corner”?</b>
+            <p>macOS asks once more before opening an app it couldn't verify.</p>
+            <span class="mac-btns"><span class="mac-btn is-target">Open Anyway</span><span class="mac-btn">Done</span></span>
+          </div>
+          <h3><span class="step">3</span> Confirm</h3>
+          <p>Click <b>Open Anyway</b>, then use Touch ID or your password. Corner opens, and macOS won't ask again for this version.</p>
+        </li>
+      </ol>
+      <div class="terminal-alt">
+        <h3>Or skip the prompt: install from Terminal</h3>
+        <p>Paste this into Terminal. It downloads the same disk image, checks its SHA-256 against the one on this site, copies Corner into Applications and opens it. macOS doesn't ask, because the download didn't come through a browser.</p>
+        <div class="cmd"><code id="install-cmd">curl -fsSL https://corner-mac.vercel.app/install.sh | sh</code><button class="btn btn-small btn-ghost" type="button" data-copy="install-cmd">Copy</button></div>
+        <p class="fine">Want to check it first? <a href="/install.sh">Read the script</a>. It's under 70 lines.</p>
+      </div>
+    </section>
+
+    <!-- Shown once there's a Buy Me a Coffee link: set the href and remove `hidden`. -->
+    <div class="support" id="support" hidden>
+      <p>Corner is free. If it earns a spot on your screen, you can buy me a coffee.</p>
+      <a class="btn btn-coffee" href="#support" rel="noopener" target="_blank">☕ Buy me a coffee</a>
+    </div>
+
+    <p class="back"><a href="/">← Back to Corner</a></p>
+  </main>
+
+  <script>
+    document.querySelectorAll("[data-copy]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        navigator.clipboard.writeText(document.getElementById(button.dataset.copy).textContent).then(function () {
+          button.textContent = "Copied";
+          setTimeout(function () { button.textContent = "Copy"; }, 1600);
+        });
+      });
+    });
+  </script>
+  <script>
+    // Give the analytics beacon a moment to go out, then start the download. The file is sent as
+    // an attachment, so this page stays put. `/download?preview` shows the page without downloading.
+    if (!new URLSearchParams(location.search).has("preview")) {
+      setTimeout(() => { window.location.href = "/downloads/Corner.dmg"; }, 900);
+    }
+  </script>
+</body>
+</html>

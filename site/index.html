@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Corner: timers, meetings and to-dos in the corner of your Mac</title>
+  <meta name="description" content="Corner is a free macOS widget that lives in the top-left corner of your screen: timers, countdowns, your next meeting, to-dos, world clocks and your Claude Code sessions, one click away.">
+  <meta property="og:title" content="Corner for Mac">
+  <meta property="og:description" content="Everything time-sensitive, one corner away. Timers, countdowns, your next meeting and to-dos for macOS.">
+  <meta property="og:image" content="/img/themes-dark.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#07080d">
+  <link rel="icon" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+  <!-- Vercel Web Analytics: counts page views without cookies. /download counts downloads. -->
+  <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <!-- A working copy of the widget itself, in this page's top-left corner. -->
+  <div class="demo-corner" id="demo-corner">
+    <button class="demo-face" id="demo-face" type="button" aria-expanded="false" aria-controls="demo-card" aria-label="Live demo of Corner: open it">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/>
+          </linearGradient>
+        </defs>
+        <path class="demo-glass" d="M0 0H100A100 100 0 0 1 0 100Z"/>
+        <path class="demo-track" d="M94 0A94 94 0 0 1 0 94"/>
+        <path class="demo-ring" id="demo-ring" d="M94 0A94 94 0 0 1 0 94"/>
+      </svg>
+      <span class="demo-text">
+        <span class="demo-value" id="demo-value">25:00</span>
+        <span class="demo-label">Focus</span>
+      </span>
+    </button>
+    <div class="demo-card" id="demo-card" hidden>
+      <div class="demo-card-head">
+        <div>
+          <div class="demo-clock" id="demo-clock">--:--</div>
+          <div class="demo-sub" id="demo-zone">Your time</div>
+        </div>
+        <button class="demo-close" id="demo-close" type="button" aria-label="Minimize to corner">↖</button>
+      </div>
+      <div class="demo-row"><span>Focus timer</span><strong id="demo-timer">25:00</strong></div>
+      <div class="demo-bar"><span id="demo-bar"></span></div>
+      <div class="demo-row"><span>Weekend</span><strong id="demo-weekend">--</strong></div>
+      <label class="demo-todo"><input type="checkbox"> Try Corner</label>
+      <label class="demo-todo"><input type="checkbox" checked> Find this website</label>
+      <p class="demo-hint">This one lives in the page. The real one floats over every app.</p>
+    </div>
+  </div>
+
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/" aria-label="Corner home">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="logo-ring" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="8" fill="#151826"/>
+          <path d="M5 5h17a17 17 0 0 1-17 17z" fill="rgba(255,255,255,.08)"/>
+          <path d="M5 19.5A14.5 14.5 0 0 0 19.5 5" fill="none" stroke="url(#logo-ring)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span>Corner</span>
+      </a>
+      <nav aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#claude">Claude Code</a>
+        <a href="#themes">Themes</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="btn btn-small btn-primary" href="/download">Download</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="glow glow-a" aria-hidden="true"></div>
+      <div class="glow glow-b" aria-hidden="true"></div>
+      <div class="container hero-copy">
+        <a class="pill reveal" href="#claude"><span class="pill-tag">New in 1.2</span> Click a Claude session to jump to its chat <span aria-hidden="true">→</span></a>
+        <h1 class="reveal">Everything time&#8209;sensitive,<br><span class="grad">one corner away.</span></h1>
+        <p class="lede reveal">Corner is a tiny macOS widget for timers, countdowns, your next meeting and to-dos. It sits quietly in the top-left of your screen, shows the one thing that matters right now, and opens when you need it.</p>
+        <div class="cta reveal">
+          <a class="btn btn-primary btn-large" href="/download">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download for macOS
+          </a>
+          <a class="btn btn-ghost btn-large" href="#how">See how it works</a>
+        </div>
+        <ul class="trust reveal" aria-label="At a glance">
+          <li>Free forever</li><li>No account</li><li>Works offline</li><li>macOS 14+</li><li>Apple silicon &amp; Intel</li>
+        </ul>
+      </div>
+
+      <div class="container">
+        <div class="mock reveal" role="img" aria-label="A Mac desktop with Corner open in the top-left corner, showing a Focus timer, upcoming meetings, countdowns, to-dos and a stopwatch, and a notification that Standup starts in one minute.">
+          <div class="mock-menubar" aria-hidden="true">
+            <span class="mb-apple"></span><b>Finder</b><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span>
+            <span class="mb-right"><span class="mb-claude">✦ Claude 4:12</span><span class="mb-timer">⏱ Focus 18:42</span><span>Mon 26 Oct</span><span>21:28</span></span>
+          </div>
+          <div class="mock-desktop" aria-hidden="true">
+            <img class="mock-card" src="/img/site-card-dark.png" alt="" width="280" height="663">
+            <div class="mock-window">
+              <div class="mw-bar"><i></i><i></i><i></i><span>Q4 planning</span></div>
+              <div class="mw-body">
+                <div class="sk w60"></div><div class="sk w90"></div><div class="sk w80"></div><div class="sk w40"></div>
+                <div class="sk-grid"><div></div><div></div><div></div></div>
+                <div class="sk w70"></div><div class="sk w85"></div>
+              </div>
+            </div>
+            <div class="mock-notif">
+              <svg class="logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#151826"/><path d="M5 19.5A14.5 14.5 0 0 0 19.5 5" fill="none" stroke="url(#logo-ring)" stroke-width="3" stroke-linecap="round"/></svg>
+              <div><b>Standup in 1 min</b><span>21:40–22:10 · Click to join</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container works reveal">
+        <p>Works with the calendars and calls you already use</p>
+        <ul>
+          <li>Google Calendar</li><li>iCloud</li><li>Outlook &amp; Exchange</li><li>Zoom</li><li>Google Meet</li><li>Microsoft Teams</li><li>Webex</li><li>Claude Code</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="section">
+      <div class="container">
+        <header class="section-head reveal">
+          <p class="eyebrow">Features</p>
+          <h2>One glance, then out of your way</h2>
+          <p>Corner picks the most urgent thing, draws its progress along the curve, and stays small until you need more.</p>
+        </header>
+
+        <div class="bento">
+          <article class="tile tile-wide reveal">
+            <div class="tile-copy">
+              <h3>A corner that knows what matters</h3>
+              <p>A running timer, a meeting about to start, a countdown that's close. Scroll over the corner to flip between them, or pin the one you care about.</p>
+            </div>
+            <div class="states">
+              <figure><img src="/img/site-state-timer.png" alt="Corner showing a Focus timer at 18:42" width="100" height="100" loading="lazy"><figcaption>Timer</figcaption></figure>
+              <figure><img src="/img/site-state-meeting.png" alt="Corner showing Standup in 11 minutes, in amber" width="100" height="100" loading="lazy"><figcaption>Meeting soon</figcaption></figure>
+              <figure><img src="/img/site-state-overtime.png" alt="Corner in red showing Focus 1 minute 12 seconds over" width="100" height="100" loading="lazy"><figcaption>Time's up</figcaption></figure>
+              <figure><img src="/img/site-state-clock.png" alt="Corner showing the time and workday progress" width="100" height="100" loading="lazy"><figcaption>Clock</figcaption></figure>
+            </div>
+          </article>
+
+          <article class="tile reveal" id="meetings">
+            <div class="tile-copy">
+              <h3>Never miss the start</h3>
+              <p>Connect Calendar and Corner counts down to your next meeting, chimes a minute before, and turns your invite's link into a Join button.</p>
+            </div>
+            <div class="ui-meeting">
+              <div class="ui-row"><i class="dot" style="--c:#0a84ff"></i><div><b>Standup</b><span>9:40–10:10 PM</span></div><em>in 1m 20s</em></div>
+              <div class="ui-row"><i class="dot" style="--c:#af52de"></i><div><b>Design review</b><span>11:00–11:30 PM</span></div><button type="button" tabindex="-1">Join</button></div>
+            </div>
+          </article>
+
+          <article class="tile tile-half reveal">
+            <div class="tile-copy">
+              <h3>Quick add, in plain English</h3>
+              <p>Press <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> anywhere and type. A length makes a timer, a time makes a countdown, anything else is a to-do.</p>
+            </div>
+            <div class="ui-quick" aria-hidden="true">
+              <div class="qa-field"><span id="qa-text"></span><i class="caret"></i></div>
+              <div class="qa-preview" id="qa-preview">&nbsp;</div>
+            </div>
+          </article>
+
+          <article class="tile tile-half reveal">
+            <div class="tile-copy">
+              <h3>To-dos that remember</h3>
+              <p>Tick things off, clear them away, and find every one again in a history grouped by day.</p>
+            </div>
+            <div class="ui-todos">
+              <label><input type="checkbox"> Review the deploy PR</label>
+              <label><input type="checkbox"> Update the incident doc</label>
+              <label><input type="checkbox" checked> Check the queue after the deploy</label>
+            </div>
+          </article>
+
+          <article class="tile reveal">
+            <div class="tile-copy">
+              <h3>Out of your way</h3>
+              <p>Keep it full size, let it shrink until you hover, or tuck it into a dot so window buttons stay clickable.</p>
+            </div>
+            <div class="modes">
+              <figure><img src="/img/site-state-timer.png" alt="" width="60" height="60" loading="lazy"><figcaption>Full</figcaption></figure>
+              <figure><img src="/img/site-state-mini.png" alt="" width="34" height="34" loading="lazy"><figcaption>Shrink</figcaption></figure>
+              <figure><span class="tuck-dot"></span><figcaption>Tuck</figcaption></figure>
+            </div>
+          </article>
+
+          <article class="tile reveal">
+            <div class="tile-copy">
+              <h3>World clocks, your way</h3>
+              <p>Your time plus two more zones, in 12-hour or 24-hour, and a bar for how much of your workday is left.</p>
+            </div>
+            <div class="ui-clocks">
+              <div><b id="clock-local">--:--</b><span id="clock-local-zone">Your time</span></div>
+              <div><b id="clock-utc">--:--</b><span>UTC</span></div>
+            </div>
+          </article>
+
+          <article class="tile reveal">
+            <div class="tile-copy">
+              <h3>Private by design</h3>
+              <p>No account, no analytics, no network. Everything stays in a folder on your Mac. Calendar access is optional and read-only.</p>
+            </div>
+            <div class="ui-private" aria-hidden="true">
+              <svg viewBox="0 0 48 48"><rect x="10" y="21" width="28" height="20" rx="5" fill="none" stroke="url(#ring-grad)" stroke-width="2.5"/><path d="M16 21v-5a8 8 0 0 1 16 0v5" fill="none" stroke="url(#ring-grad)" stroke-width="2.5"/></svg>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Claude Code -->
+    <section id="claude" class="section">
+      <div class="container claude">
+        <div class="claude-copy reveal">
+          <p class="eyebrow">Claude Code · updated in 1.2</p>
+          <h2>Know what Claude is doing, without checking</h2>
+          <p>Hand Claude Code a long task and get on with your day. Corner shows every session in the corner of your screen by its chat's name, and taps you on the shoulder the moment Claude needs an answer or is done. Click a session, or its notification, to jump straight to that chat in the Claude app.</p>
+          <ul class="claude-states">
+            <li>
+              <img src="/img/site-claude-working.png" alt="Corner in violet: Claude has been working on Shrink the corner on hover for 4 minutes 12 seconds" width="64" height="64" loading="lazy">
+              <div><b>Working</b><span>Violet, with how long it's been running. Your own timers and meetings still come first.</span></div>
+            </li>
+            <li>
+              <img src="/img/site-claude-needs.png" alt="Corner in amber: Claude needs you" width="64" height="64" loading="lazy">
+              <div><b>Needs you</b><span>Amber as soon as Claude asks for permission or a reply, with one chime and a notification.</span></div>
+            </li>
+            <li>
+              <img src="/img/site-claude-done.png" alt="Corner in green: Claude is done in dlq-debug after 7 minutes" width="64" height="64" loading="lazy">
+              <div><b>Done</b><span>Green when a turn finishes, with the start of Claude's reply. Quick answers stay quiet.</span></div>
+            </li>
+          </ul>
+          <p class="claude-note">One click in Settings adds Corner's hooks to Claude Code, with a backup of your settings. Events stay in a file on your Mac, and the hook takes milliseconds, so it never holds Claude up. Works with the Claude Code CLI and the Claude app's Code tab.</p>
+        </div>
+        <div class="claude-shot reveal">
+          <img src="/img/site-claude-card.png" alt="The card's Claude section: Corner app build needs permission for Bash, Shrink the corner on hover is working, dlq-debug finished 2 minutes ago" width="300" height="203" loading="lazy">
+        </div>
+      </div>
+    </section>
+
+    <!-- Themes -->
+    <section id="themes" class="section">
+      <div class="container themes">
+        <div class="themes-copy reveal">
+          <p class="eyebrow">Themes</p>
+          <h2>Make it yours</h2>
+          <p>Seven themes tint the glass and give every section its own color, in light and dark mode. Red for alerts and amber for "soon" never change, so a warning always looks like one.</p>
+          <div class="swatches" role="group" aria-label="Preview a theme">
+            <button type="button" data-theme="aurora" aria-pressed="true" style="--a:#22d3ee;--b:#8b5cf6;--c:#ec4899">Aurora</button>
+            <button type="button" data-theme="ocean" aria-pressed="false" style="--a:#0ea5e9;--b:#6366f1;--c:#6366f1">Ocean</button>
+            <button type="button" data-theme="sunset" aria-pressed="false" style="--a:#f97316;--b:#db2777;--c:#db2777">Sunset</button>
+            <button type="button" data-theme="forest" aria-pressed="false" style="--a:#059669;--b:#0d9488;--c:#0d9488">Forest</button>
+            <button type="button" data-theme="lavender" aria-pressed="false" style="--a:#7c3aed;--b:#db2777;--c:#db2777">Lavender</button>
+            <button type="button" data-theme="midnight" aria-pressed="false" style="--a:#0f172a;--b:#312e81;--c:#fbbf24">Midnight</button>
+            <button type="button" data-theme="system" aria-pressed="false" style="--a:#3a3f4f;--b:#1f2330;--c:#0a84ff">Glass</button>
+          </div>
+        </div>
+        <div class="themes-shot reveal" id="themes-shot" style="--glow:#8b5cf6">
+          <img id="theme-img" src="/img/site-theme-aurora.jpg" alt="Corner's card in the Aurora theme" width="280" height="663" loading="lazy">
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="section">
+      <div class="container">
+        <header class="section-head reveal">
+          <p class="eyebrow">Get started</p>
+          <h2>Up and running in a minute</h2>
+        </header>
+        <ol class="how">
+          <li class="reveal">
+            <span class="num">1</span>
+            <h3>Download and drag</h3>
+            <p>Open <a href="/download">Corner-1.2.dmg</a> and drag Corner onto Applications.</p>
+          </li>
+          <li class="reveal">
+            <span class="num">2</span>
+            <h3>Allow it once</h3>
+            <p>Corner isn't notarized by Apple yet, so macOS says it can't verify it. In <b>System Settings → Privacy &amp; Security</b>, click <b>Open Anyway</b>. <a href="/download?preview#verify">Show me how</a></p>
+          </li>
+          <li class="reveal">
+            <span class="num">3</span>
+            <h3>Look top-left</h3>
+            <p>Corner appears under the Apple menu, with a timer icon in the menu bar. Press <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> to add your first timer.</p>
+          </li>
+        </ol>
+        <div class="terminal-alt reveal">
+          <h3>Or install from Terminal, with no security prompt</h3>
+          <p>It downloads the same disk image, checks its SHA-256, copies Corner into Applications and opens it. macOS doesn't ask, because the download didn't come through a browser. <a href="/install.sh">Read the script</a>.</p>
+          <div class="cmd"><code id="install-cmd">curl -fsSL https://corner-mac.vercel.app/install.sh | sh</code><button class="btn btn-small btn-ghost" type="button" data-copy="install-cmd">Copy</button></div>
+        </div>
+
+        <dl class="stats reveal">
+          <div><dt>Download</dt><dd>2.0 MB</dd></div>
+          <div><dt>Accounts needed</dt><dd>0</dd></div>
+          <div><dt>Themes</dt><dd>7</dd></div>
+          <div><dt>Runs on</dt><dd>M-series &amp; Intel</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Quick add reference -->
+    <section id="quick-add" class="section section-tight">
+      <div class="container">
+        <header class="section-head reveal">
+          <p class="eyebrow">Quick add</p>
+          <h2>Type it the way you'd say it</h2>
+        </header>
+        <div class="table-wrap reveal">
+          <table>
+            <thead><tr><th>You type</th><th>You get</th></tr></thead>
+            <tbody>
+              <tr><td><code>25m focus</code> <code>1h30</code> <code>90s tea</code></td><td>A timer, started right away</td></tr>
+              <tr><td><code>6pm standup</code> <code>until 18:30</code></td><td>A countdown to the next time it's that time</td></tr>
+              <tr><td><code>fri 6pm release</code> <code>24 dec party</code></td><td>A countdown to that day</td></tr>
+              <tr><td><code>every weekday 10am standup</code></td><td>A countdown that repeats</td></tr>
+              <tr><td><code>buy milk</code> <code>todo 5 things to fix</code></td><td>A to-do</td></tr>
+              <tr><td><code>sw</code></td><td>Starts the stopwatch</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="section">
+      <div class="container">
+        <header class="section-head reveal">
+          <p class="eyebrow">Pricing</p>
+          <h2>Free. Every feature.</h2>
+          <p>No trial, no tiers, no account.</p>
+        </header>
+        <div class="price-card reveal">
+          <div class="price-top">
+            <div>
+              <h3>Corner</h3>
+              <p>Everything, for everyone.</p>
+            </div>
+            <div class="price"><span>$0</span><small>forever</small></div>
+          </div>
+          <ul class="checks">
+            <li>Timers with overtime alerts</li>
+            <li>Countdowns you can repeat or end early</li>
+            <li>Next meeting with Join</li>
+            <li>To-dos with history</li>
+            <li>World clocks, 12h or 24h</li>
+            <li>Stopwatch and workday bar</li>
+            <li>Seven themes</li>
+            <li>Shrink, tuck or hide</li>
+            <li>Claude Code sessions, a click from their chat</li>
+          </ul>
+          <a class="btn btn-primary btn-large btn-block" href="/download">Download for macOS</a>
+          <p class="fine">Version 1.2 · 2.0 MB · macOS 14 Sonoma or later</p>
+        </div>
+
+        <!-- Shown once there's a Buy Me a Coffee link: set the href and remove `hidden`. -->
+        <div class="support" id="support" hidden>
+          <p>Corner stays free. If it saved you from missing a meeting, you can say thanks.</p>
+          <a class="btn btn-coffee" href="#support" rel="noopener" target="_blank">☕ Buy me a coffee</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="section">
+      <div class="container">
+        <header class="section-head reveal">
+          <p class="eyebrow">FAQ</p>
+          <h2>Questions, answered</h2>
+        </header>
+        <div class="faq reveal">
+          <details>
+            <summary>Will it cover the buttons in the corner of my windows?</summary>
+            <p>It can, so choose <em>Shrink, grow on hover</em> or <em>Tuck into the edge</em> under Settings → "When not in use". Tucked, it's a 10-point dot and clicks go straight through. Push the pointer into the left edge of the screen to bring it back.</p>
+          </details>
+          <details>
+            <summary>Does it work in full-screen apps and on every desktop?</summary>
+            <p>Yes. It shows on every Space, and moves to the very top when an app is full screen and the menu bar is hidden.</p>
+          </details>
+          <details>
+            <summary>Why does macOS say it can't check Corner?</summary>
+            <p>Corner isn't notarized by Apple yet, so macOS says “Apple could not verify ‘Corner’ is free of malware”. Click Done, then allow it once in System Settings → Privacy &amp; Security → Open Anyway (<a href="/download?preview#verify">step by step</a>). You won't be asked again for that version. Or install with <code>curl -fsSL https://corner-mac.vercel.app/install.sh | sh</code> in Terminal, which macOS doesn't ask about.</p>
+          </details>
+          <details>
+            <summary>Why does it ask for calendar access again after an update?</summary>
+            <p>Without an Apple developer certificate, macOS treats each new version as a new app for permissions. Click Connect in the card again.</p>
+          </details>
+          <details>
+            <summary>⌥⌘T does something else in one of my apps</summary>
+            <p>While Corner runs, ⌥⌘T opens quick add everywhere. In Finder that's normally Hide Toolbar. Quick add is also in the menu bar menu and the corner's right-click menu.</p>
+          </details>
+          <details>
+            <summary>What does the Claude Code setup change?</summary>
+            <p>It adds six hooks to <code>~/.claude/settings.json</code> (saving a backup first) that each run a tiny script. The script writes the event to a file in Corner's own folder and exits, so nothing leaves your Mac and Claude never waits on it. Settings → Claude Code → Remove takes Corner's entries back out and leaves the rest alone. To name sessions and open their chats, Corner also reads the Claude app's list of chats on your Mac; it never changes it.</p>
+          </details>
+          <details>
+            <summary>How do I uninstall it?</summary>
+            <p>Quit from the menu bar icon, delete Corner from Applications, and delete <code>~/Library/Application Support/Corner</code> to remove your saved timers and to-dos.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final call to action -->
+    <section class="section">
+      <div class="container">
+        <div class="final reveal">
+          <h2>Give your Mac a calmer corner.</h2>
+          <p>Free, private, and 2.0 MB. Set up in a minute.</p>
+          <a class="btn btn-primary btn-large" href="/download">Download for macOS</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="/" aria-label="Corner home">
+          <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#151826"/><path d="M5 5h17a17 17 0 0 1-17 17z" fill="rgba(255,255,255,.08)"/><path d="M5 19.5A14.5 14.5 0 0 0 19.5 5" fill="none" stroke="url(#logo-ring)" stroke-width="3" stroke-linecap="round"/></svg>
+          <span>Corner</span>
+        </a>
+        <p>Timers, meetings and to-dos in the corner of your Mac.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="#features">Features</a>
+        <a href="#claude">Claude Code</a>
+        <a href="#themes">Themes</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/download">Download</a>
+      </div>
+      <div>
+        <h4>Help</h4>
+        <a href="#how">Install guide</a>
+        <a href="#quick-add">Quick add</a>
+        <a href="#faq">FAQ</a>
+      </div>
+    </div>
+    <div class="container footer-fine">
+      <p>Corner 1.2 for macOS. This site counts visits with Vercel Web Analytics: no cookies, no personal data.</p>
+      <p class="checksum">SHA-256 of Corner-1.2.dmg: <code>1f21b6e4db738645ddc25c38e3a9af4eeb6db5ec46169fc4197c2c997bbd5717</code></p>
+    </div>
+  </footer>
+
+  <script src="/corner-demo.js" defer></script>
+  <script src="/site.js" defer></script>
+</body>
+</html>
