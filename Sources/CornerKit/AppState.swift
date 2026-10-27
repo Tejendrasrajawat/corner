@@ -42,6 +42,8 @@ public struct CornerFace: Equatable, Sendable {
     public var tone: Tone
     /// No known end (Claude working): the ring sweeps instead of filling.
     public var indeterminate = false
+    /// Set when the idle corner shows a companion instead of the clock.
+    public var companion: CompanionKind? = nil
 }
 
 public struct AppState: Codable, Equatable, Sendable {
@@ -375,6 +377,10 @@ extension AppState {
         let style = settings.clockStyle
         // 12-hour puts AM/PM on the label line; the value line has no room for it.
         let label = style == .h12 ? "\(Format.period(now, in: zone.timeZone)) · \(zone.label)" : zone.label
+        if settings.idleFace == .companion {
+            return CornerFace(ref: .clock, value: "", label: settings.companion.name,
+                              progress: workdayProgress(at: now), tone: .muted, companion: settings.companion)
+        }
         return CornerFace(ref: .clock, value: Format.clock(now, in: zone.timeZone, seconds: false, style: style),
                           label: label, progress: workdayProgress(at: now), tone: .muted)
     }

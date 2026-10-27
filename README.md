@@ -8,6 +8,27 @@ clocks, timers, countdowns, a stopwatch and workday progress.
 | --- | --- | --- | --- |
 | ![](docs/corner-timer-dark.png) | ![](docs/corner-meeting-dark.png) | ![](docs/corner-overtime-light.png) | ![](docs/card-dark.png) |
 
+### Companions
+
+Settings → Idle corner (or right-click the corner → When nothing's on) swaps the idle clock for a
+companion: original pixel-art characters in the style of desktop mascots (a ninja, a swordsman, a
+mage) and a cat. Whenever a timer, countdown, meeting or Claude session needs the corner, it takes
+over as before.
+
+- `CompanionBrain` (CornerKit) picks what it does: sits about, waves, does its own trick (throwing
+  stars, sword practice, a spell, chasing yarn), paces up and down, climbs the side of the screen
+  and goes hand over hand under the menu bar before dropping back down, naps after 5 minutes away
+  from the keyboard (1 minute after midnight), stretches when you're back, and waves with hearts
+  when the pointer is on the corner. Idle time comes from `CGEventSource`, which needs no permission.
+- The art is text: `Views/CompanionSprites.swift` holds every sprite as rows of palette letters
+  (shared bodies and heads, each character's hair and kit on top). `scripts/companion-preview.py`
+  draws them to a PNG for working on the art; `Corner --snapshot` renders every move in
+  `companions-*.png`.
+- `Views/CompanionView.swift` scripts each activity as a loop of 56 × 56 frames and hands them to
+  Core Animation, which plays them with hard pixel edges; the companion costs about 0.1% CPU.
+  Redrawing through SwiftUI every frame cost 5 ms a frame, 4-9% of a core, all day.
+- Reduce Motion shows a still frame per activity.
+
 ### Claude Code activity
 
 Settings → Claude Code → **Set up…** adds six hooks (UserPromptSubmit, PostToolUse, Notification,
@@ -100,6 +121,10 @@ in System Settings → Privacy & Security. An Apple Developer ID plus notarizati
 
 - **Click the corner** to open the card. Close it with the arrow, Esc, a click anywhere else, or
   just move away; it closes itself after 10 seconds (change it in Settings).
+- **Drag the corner** to any corner of the screen and let go: it settles into the nearest one
+  (also Settings → Corner → Screen corner, or right-click → Screen corner). The card opens from
+  there, the tuck tab sits there, and companions treat that side of the screen as their wall
+  (in the bottom corners they stand on the bottom edge).
 - **Scroll over the corner** to step through your timers, countdowns, the stopwatch and the clock.
 - **Right-click the corner** for pause, +5 min, reset, a new timer, or pin.
 - **× on a countdown** closes it early. A repeating countdown skips to its next time instead

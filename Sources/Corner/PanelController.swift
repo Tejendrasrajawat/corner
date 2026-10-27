@@ -13,11 +13,13 @@ final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
-/// The borderless panel pinned to the top-left of the main screen, just under the menu bar.
+/// The borderless panel pinned to a corner of the main screen (top-left unless moved), inside the
+/// menu bar and the Dock.
 ///
 /// Mouse handling: the window is a square, but only the quarter disc should take clicks. The
 /// panel ignores the mouse until the cursor is inside the curve, so the gap between the curve
-/// and the square's corner clicks through to whatever is behind it.
+/// and the square's far corner clicks through to whatever is behind it. Dragging the corner moves
+/// it; let go and it settles into whichever corner of the screen is nearest.
 @MainActor
 final class PanelController {
     private let store: Store
@@ -33,6 +35,9 @@ final class PanelController {
     private var collapseGeneration = 0
     private var scrollAccumulator: CGFloat = 0
     private var restTimer: DispatchWorkItem?
+    /// A press on the corner, in screen coordinates, and the window's origin then.
+    private var press: (point: NSPoint, origin: NSPoint)?
+    private var dragging = false
 
     private static let collapsedScale: CGFloat = 0.36
 
@@ -71,7 +76,7 @@ final class PanelController {
 
         // $state fires before the new value is stored, so act on the next turn of the run loop.
         store.$state
-            .map(\.settings.cornerSize)
+            .map { "\($0.settings.cornerSize.rawValue)|\($0.settings.screenCorner.rawValue)" }
             .removeDuplicates()
             .dropFirst()
             .sink { [weak self] _ in
@@ -149,13 +154,16 @@ final class PanelController {
         restTimer = nil
     }
 
-    /// The pointer pressed against the left screen edge, alongside the corner. Chrome's and other
-    /// apps' window controls sit a little in from the edge, so reaching for them never triggers this.
+    /// The pointer pressed against the side of the screen, alongside the corner. Window controls
+    /// sit a little in from the edge, so reaching for them never triggers this.
     private func pushedIntoEdge(_ p: NSPoint) -> Bool {
         guard let screen = NSScreen.screens.first else { return false }
         let f = panel.frame
+        let corner = store.state.settings.screenCorner
         let band = store.state.settings.cornerSize.points * 1.2
-        return p.x <= screen.frame.minX + 1 && p.y <= f.maxY + 1 && p.y >= f.maxY - band
+        let atEdge = corner.isRight ? p.x >= screen.frame.maxX - 1 : p.x <= screen.frame.minX + 1
+        let alongside = corner.isBottom ? p.y >= f.minY - 1 && p.y <= f.minY + band : p.y <= f.maxY + 1 && p.y >= f.maxY - band
+        return atEdge && alongside
     }
 
     // MARK: - Expand and collapse
@@ -285,11 +293,18 @@ final class PanelController {
         }
     }
 
-    func layout() {
-        guard let screen = NSScreen.screens.first else { return }
-        // In a full-screen app the menu bar is hidden, so the corner moves up to the very top.
-        let top = fullScreen ? screen.frame.maxY : screen.visibleFrame.maxY
-        let left = screen.visibleFrame.minX
+    func layout(animate: Bool = false) {
+        guard !dragging else { return }
+        let frame = frame(for: store.state.settings.screenCorner)
+        panel.setFrame(frame, display: true, animate: animate)
+        debugLayout("layout wanted \(frame.size), window is \(panel.frame.size)")
+    }
+
+    /// The window's frame in a corner of the main screen. In a full-screen app the menu bar and
+    /// Dock are hidden, so it goes right to the edge.
+    private func frame(for corner: ScreenCorner) -> NSRect {
+        guard let screen = NSScreen.screens.first else { return panel.frame }
+        let area = fullScreen ? screen.frame : screen.visibleFrame
         let size: CGSize
         if ui.expanded {
             size = cardSize
@@ -298,8 +313,9 @@ final class PanelController {
             let side = ceil(store.state.settings.cornerSize.points * 1.1)
             size = CGSize(width: side, height: side)
         }
-        panel.setFrame(NSRect(x: left, y: top - size.height, width: size.width, height: size.height), display: true)
-        debugLayout("layout wanted \(size), window is \(panel.frame.size)")
+        let x = corner.isRight ? area.maxX - size.width : area.minX
+        let y = corner.isBottom ? area.minY : area.maxY - size.height
+        return NSRect(x: x, y: y, width: size.width, height: size.height)
     }
 
     /// `CORNER_DEBUG_LAYOUT=1` prints sizing decisions to stderr.
@@ -364,6 +380,12 @@ final class PanelController {
         if let m = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown], handler: { [weak self] _ in
             MainActor.assumeIsolated { self?.clickedOutside() }
         }) { monitors.append(m) }
+        // Dragging the corner to another corner of the screen. The events still reach the view, so
+        // a press without a drag stays an ordinary click.
+        if let m = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp], handler: { [weak self] event in
+            MainActor.assumeIsolated { self?.handleDrag(event) }
+            return event
+        }) { monitors.append(m) }
         if let m = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel, handler: { [weak self] event in
             let handled = MainActor.assumeIsolated { self?.scrolled(event) ?? false }
             return handled ? nil : event
@@ -392,8 +414,9 @@ final class PanelController {
 
     private func inside(_ p: NSPoint, radius: Double) -> Bool {
         let f = panel.frame
-        let dx = p.x - f.minX
-        let dy = f.maxY - p.y
+        let corner = store.state.settings.screenCorner
+        let dx = corner.isRight ? f.maxX - p.x : p.x - f.minX
+        let dy = corner.isBottom ? p.y - f.minY : f.maxY - p.y
         return dx >= -1 && dy >= -1 && dx * dx + dy * dy <= radius * radius
     }
 
@@ -429,6 +452,48 @@ final class PanelController {
         let hover = inside && !ui.expanded && prefs.restStyle != .mini
         if ui.hovering != hover {
             withAnimation(.easeOut(duration: 0.12)) { ui.hovering = hover }
+        }
+    }
+
+    private func handleDrag(_ event: NSEvent) {
+        let p = NSEvent.mouseLocation
+        switch event.type {
+        case .leftMouseDown:
+            press = !ui.expanded && contains(p) ? (p, panel.frame.origin) : nil
+        case .leftMouseDragged:
+            guard let press else { return }
+            let dx = p.x - press.point.x, dy = p.y - press.point.y
+            if !dragging {
+                // A few points of wobble is still a click.
+                guard dx * dx + dy * dy > 36 else { return }
+                dragging = true
+                cancelRest()
+                withAnimation(.easeOut(duration: 0.12)) { ui.hovering = false }
+            }
+            panel.setFrameOrigin(NSPoint(x: press.origin.x + dx, y: press.origin.y + dy))
+        case .leftMouseUp:
+            defer { press = nil }
+            guard dragging else { return }
+            dragging = false
+            ui.justDragged = true
+            settle(at: p)
+        default:
+            break
+        }
+    }
+
+    /// Lets go of a drag: the corner of the screen nearest the pointer becomes the corner's home.
+    private func settle(at p: NSPoint) {
+        guard let screen = NSScreen.screens.first else { return }
+        let f = screen.frame
+        let corner = ScreenCorner.nearest(right: p.x > f.midX, bottom: p.y < f.midY)
+        if store.state.settings.screenCorner != corner {
+            store.mutate { $0.settings.screenCorner = corner }
+        }
+        layout(animate: true)
+        // The tap that comes with the mouse-up has fired by now if it was going to.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            MainActor.assumeIsolated { self?.ui.justDragged = false }
         }
     }
 

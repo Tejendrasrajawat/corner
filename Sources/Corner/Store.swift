@@ -242,6 +242,8 @@ final class UIModel: ObservableObject {
     @Published var editingTodo: UUID?
     /// What scrolling over the corner picked; not saved.
     @Published var manual: ItemRef?
+    /// A drag of the corner just ended, so the click that comes with it shouldn't open the card.
+    var justDragged = false
 
     /// Typing somewhere on the card, so it shouldn't close itself.
     var isTyping: Bool { quickAddActive || editingTodo != nil }

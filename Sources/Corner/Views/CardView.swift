@@ -6,6 +6,7 @@ struct CardView: View {
     @ObservedObject var store: Store
     @ObservedObject var ui: UIModel
     @Environment(\.theme) private var theme
+    @Environment(\.screenCorner) private var corner
 
     var body: some View {
         let s = store.state
@@ -49,10 +50,17 @@ struct CardView: View {
         }
         .frame(width: 280)
         .background(ThemedBackground(kind: .card))
-        .overlay(
-            UnevenRoundedRectangle(bottomTrailingRadius: Masks.cardRadius)
-                .strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5)
-        )
+        .overlay(corner.cardShape.strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5))
+    }
+
+    /// Points at the corner the card shrinks back into.
+    private var minimizeSymbol: String {
+        switch corner {
+        case .topLeft: "arrow.up.left"
+        case .topRight: "arrow.up.right"
+        case .bottomLeft: "arrow.down.left"
+        case .bottomRight: "arrow.down.right"
+        }
     }
 
     private var divider: some View {
@@ -85,7 +93,7 @@ struct CardView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            IconButton(symbol: "arrow.up.left", help: "Minimize to corner") { ui.collapse() }
+            IconButton(symbol: minimizeSymbol, help: "Minimize to corner") { ui.collapse() }
         }
         .padding(.horizontal, 12)
         .padding(.top, 12)

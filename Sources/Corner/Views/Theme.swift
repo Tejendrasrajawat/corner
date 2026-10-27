@@ -100,12 +100,11 @@ struct ThemedBackground: View {
     let kind: GlassBackground.Kind
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.screenCorner) private var corner
 
     var body: some View {
-        let shape = kind == .quarter
-            ? AnyShape(QuarterShape())
-            : AnyShape(UnevenRoundedRectangle(bottomTrailingRadius: Masks.cardRadius))
-        let gradient = LinearGradient(colors: theme.wash, startPoint: .topLeading, endPoint: .bottomTrailing)
+        let shape = kind == .quarter ? AnyShape(QuarterShape(corner: corner)) : AnyShape(corner.cardShape)
+        let gradient = LinearGradient(colors: theme.wash, startPoint: corner.unitPoint, endPoint: corner.opposite)
         ZStack {
             if theme.solid {
                 shape.fill(gradient).opacity(0.96)

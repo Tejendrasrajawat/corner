@@ -7,7 +7,8 @@ struct RootView: View {
     @ObservedObject var ui: UIModel
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        let corner = store.state.settings.screenCorner
+        ZStack(alignment: corner.alignment) {
             if ui.expanded {
                 // Reported straight from a GeometryReader: a preference key here never fired when
                 // the card appeared, which left the window at its default height and clipped the card.
@@ -18,18 +19,22 @@ struct RootView: View {
                             .onAppear { ui.cardSizeChanged(geo.size) }
                             .onChange(of: geo.size) { _, size in ui.cardSizeChanged(size) }
                     })
-                    .scaleEffect(ui.cardScale, anchor: .topLeading)
+                    .scaleEffect(ui.cardScale, anchor: corner.unitPoint)
                     .opacity(ui.cardOpacity)
             } else {
                 let face = store.state.face(at: store.now, manual: ui.manual)
-                let shrink = AnyTransition.scale(scale: 0.1, anchor: .topLeading).combined(with: .opacity)
+                let shrink = AnyTransition.scale(scale: 0.1, anchor: corner.unitPoint).combined(with: .opacity)
                 if ui.tucked {
                     TuckedTab(tone: face.tone).transition(shrink)
                 } else {
                     let cornerSize = store.state.settings.cornerSize
                     CornerFaceView(face: face, size: ui.shrunk ? cornerSize.miniPoints : cornerSize.points,
-                                   fullSize: cornerSize.points, hovering: ui.hovering)
-                        .onTapGesture { ui.expand() }
+                                   fullSize: cornerSize.points, hovering: ui.hovering,
+                                   animate: !store.state.settings.hidden, now: store.now)
+                        .onTapGesture {
+                            // The click that ends a drag isn't a tap.
+                            if ui.justDragged { ui.justDragged = false } else { ui.expand() }
+                        }
                         .contextMenu { cornerMenu(face) }
                         .transition(shrink)
                 }
@@ -37,8 +42,29 @@ struct RootView: View {
         }
         // Explicit zero minimums keep the root no bigger than the window, so anything that doesn't
         // fit overflows downward instead of being centred and clipped at the top as well.
-        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: corner.alignment)
         .themed(Theme.named(store.state.settings.theme))
+        .environment(\.screenCorner, corner)
+    }
+
+    /// The clock, or one of the companions, as a single menu choice.
+    private var idleChoice: Binding<String> {
+        Binding(
+            get: {
+                let s = store.state.settings
+                return s.idleFace == .clock ? "clock" : s.companion.rawValue
+            },
+            set: { choice in
+                store.mutate { state in
+                    if let kind = CompanionKind(rawValue: choice) {
+                        state.settings.companion = kind
+                        state.settings.idleFace = .companion
+                    } else {
+                        state.settings.idleFace = .clock
+                    }
+                }
+            }
+        )
     }
 
     @ViewBuilder
@@ -82,6 +108,17 @@ struct RootView: View {
             Button(store.state.pinned == face.ref ? "Unpin from corner" : "Pin to corner") { store.togglePin(face.ref) }
         }
         Divider()
+        Picker("When nothing's on", selection: idleChoice) {
+            Text("Clock").tag("clock")
+            ForEach(CompanionKind.allCases, id: \.self) { kind in
+                Text(kind.name).tag(kind.rawValue)
+            }
+        }
+        Picker("Screen corner", selection: store.binding(\.settings.screenCorner)) {
+            ForEach(ScreenCorner.allCases, id: \.self) { corner in
+                Text(corner.name).tag(corner)
+            }
+        }
         Picker("When not in use", selection: store.binding(\.settings.restStyle)) {
             Text("Stay full size").tag(RestStyle.full)
             Text("Shrink, grow on hover").tag(RestStyle.mini)

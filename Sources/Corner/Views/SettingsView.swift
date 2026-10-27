@@ -29,6 +29,30 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
+            Section {
+                Picker("When nothing's on", selection: store.binding(\.settings.idleFace)) {
+                    Text("Show the clock").tag(IdleFace.clock)
+                    Text("Show a companion").tag(IdleFace.companion)
+                }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 5), spacing: 12) {
+                    ForEach(CompanionKind.allCases, id: \.self) { kind in
+                        CompanionTile(kind: kind, selected: store.state.settings.idleFace == .companion
+                                      && store.state.settings.companion == kind) {
+                            store.mutate { s in
+                                s.settings.companion = kind
+                                s.settings.idleFace = .companion
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Text("Idle corner")
+            } footer: {
+                Text("When no timer, countdown, meeting or Claude session needs the corner, it shows the clock or a companion. Companions sit, play and wander about, nap while you're away from the keyboard, and say hello when you point at them.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
             Section("Clocks") {
                 Picker("Time format", selection: store.binding(\.settings.clockStyle)) {
                     Text("24-hour").tag(ClockStyle.h24)
@@ -78,7 +102,12 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
-            Section("Corner") {
+            Section {
+                Picker("Screen corner", selection: store.binding(\.settings.screenCorner)) {
+                    ForEach(ScreenCorner.allCases, id: \.self) { corner in
+                        Text(corner.name).tag(corner)
+                    }
+                }
                 Picker("Size", selection: store.binding(\.settings.cornerSize)) {
                     Text("Small").tag(CornerSize.small)
                     Text("Medium").tag(CornerSize.medium)
@@ -91,6 +120,12 @@ struct SettingsView: View {
                     Text("30 seconds").tag(30)
                     Text("Never").tag(0)
                 }
+            } header: {
+                Text("Corner")
+            } footer: {
+                Text("You can also drag the corner to any corner of the screen and let go.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
             Section("Calendar") {
                 Toggle("Show my next meeting", isOn: store.binding(\.settings.showMeetings))

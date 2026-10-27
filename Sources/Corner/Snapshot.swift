@@ -111,6 +111,64 @@ enum Snapshot {
                 render(CornerFaceView(face: s.face(at: now), size: 100, hovering: false),
                        scheme: scheme, to: dir.appendingPathComponent("corner-\(name)-\(suffix).png"))
             }
+            // Each companion doing each thing, at a moment that shows it off, and the climb step by step.
+            let moments: [(CompanionActivity, Double)] = [
+                (.sit, 0.1), (.wag, 0.2), (.play, 0.6), (.play, 1.0), (.walk, 0.5), (.sleep, 1.0), (.wake, 0.5), (.greet, 0.3),
+            ]
+            let climbTimes: [Double] = [0.3, 1.2, 2.4, 3.6, 4.5, 4.7, 5.1, 5.6]
+            func cell(_ kind: CompanionKind, _ activity: CompanionActivity, _ t: Double) -> some View {
+                let frames = CompanionFrames.frames(kind, activity)
+                let index = min(frames.count - 1, Int(t * CompanionFrames.loop(activity).fps))
+                return ZStack(alignment: .topLeading) {
+                    ThemedBackground(kind: .quarter)
+                    QuarterArc(inset: 6).stroke(Color.primary.opacity(0.12), lineWidth: 4.8)
+                    Image(decorative: frames[index], scale: 1).interpolation(.none).resizable().clipShape(QuarterShape())
+                }
+                .frame(width: 120, height: 120)
+            }
+            render(VStack(alignment: .leading, spacing: 8) {
+                ForEach(CompanionKind.allCases, id: \.self) { kind in
+                    HStack(spacing: 8) {
+                        ForEach(moments.indices, id: \.self) { i in cell(kind, moments[i].0, moments[i].1) }
+                    }
+                    HStack(spacing: 8) {
+                        ForEach(climbTimes.indices, id: \.self) { i in cell(kind, .climb, climbTimes[i]) }
+                    }
+                }
+            }.padding(8).themed(Theme.named(.midnight)),
+                   scheme: scheme, to: dir.appendingPathComponent("companions-\(suffix).png"))
+            // The corner in each corner of the screen: a timer, a companion, and the card in the bottom right.
+            render(VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    ForEach(ScreenCorner.allCases, id: \.self) { corner in
+                        CornerFaceView(face: state.face(at: now), size: 100, hovering: false)
+                            .frame(width: 100, height: 100)
+                            .padding(4)
+                            .background(Color.primary.opacity(0.06))
+                            .environment(\.screenCorner, corner)
+                    }
+                }
+                // Companions are layers the renderer can't capture, so their frames are drawn directly.
+                ForEach([(CompanionKind.ninja, CompanionActivity.sit, 0.3), (.ninja, .climb, 3.0), (.cat, .climb, 2.5)].indices, id: \.self) { row in
+                    let (kind, activity, t) = [(CompanionKind.ninja, CompanionActivity.sit, 0.3), (.ninja, .climb, 3.0), (.cat, .climb, 2.5)][row]
+                    HStack(spacing: 10) {
+                        ForEach(ScreenCorner.allCases, id: \.self) { corner in
+                            let frames = CompanionFrames.frames(kind, activity, corner: corner)
+                            ZStack(alignment: corner.alignment) {
+                                ThemedBackground(kind: .quarter)
+                                Image(decorative: frames[min(frames.count - 1, Int(t * CompanionFrames.loop(activity).fps))], scale: 1)
+                                    .interpolation(.none).resizable().clipShape(QuarterShape(corner: corner))
+                            }
+                            .frame(width: 100, height: 100)
+                            .padding(4)
+                            .background(Color.primary.opacity(0.06))
+                            .environment(\.screenCorner, corner)
+                        }
+                    }
+                }
+                CardView(store: previewStore(twelve), ui: UIModel()).fixedSize().environment(\.screenCorner, .bottomRight)
+            }.padding(8),
+                   scheme: scheme, to: dir.appendingPathComponent("corners-\(suffix).png"))
             // Every corner size side by side, with long labels, to check text size and placement.
             var longName = working
             _ = longName.apply(ClaudeEvent(kind: .promptSubmitted, sessionID: "a", cwd: "/Users/me/Desktop/inventory-apis"),

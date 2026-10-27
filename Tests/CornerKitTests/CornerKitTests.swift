@@ -776,3 +776,84 @@ private func parse(_ text: String) -> Result<ParsedEntry, ParseError> {
         #expect(s.face(at: now).label == "Fix the DLQ")
     }
 }
+
+@Suite struct CompanionTests {
+    @Test func idleCornerShowsTheCompanionInsteadOfTheClock() {
+        var s = AppState(settings: prefs)
+        #expect(s.face(at: now).companion == nil)
+        s.settings.idleFace = .companion
+        s.settings.companion = .mage
+        let face = s.face(at: now)
+        #expect(face.ref == .clock)
+        #expect(face.companion == .mage)
+        #expect(face.value.isEmpty)
+        // Anything else still takes the corner over.
+        s.timers = [CTimer(label: "Focus", duration: 600, startedAt: now)]
+        #expect(s.face(at: now).companion == nil)
+    }
+
+    @Test func olderSettingsKeepTheClockAndUnknownCharactersFallBack() throws {
+        let old = try JSONDecoder().decode(Preferences.self, from: Data(#"{"theme":"ocean"}"#.utf8))
+        #expect(old.idleFace == .clock)
+        #expect(old.companion == .ninja)
+        let odd = try JSONDecoder().decode(Preferences.self, from: Data(#"{"idleFace":"aquarium","companion":"dragon"}"#.utf8))
+        #expect(odd.idleFace == .clock)
+        #expect(odd.companion == .ninja)
+        var saved = Preferences.standard
+        saved.idleFace = .companion
+        saved.companion = .swordsman
+        let back = try JSONDecoder().decode(Preferences.self, from: JSONEncoder().encode(saved))
+        #expect(back.idleFace == .companion && back.companion == .swordsman)
+    }
+
+    @Test func keepsBusyThenMovesOn() {
+        var brain = CompanionBrain(now: now, seed: 7)
+        #expect(brain.activity == .sit)
+        var seen: Set<CompanionActivity> = []
+        for second in stride(from: 0.0, through: 600, by: 0.5) {
+            seen.insert(brain.update(now: now.addingTimeInterval(second), away: 1, hour: 14, hovering: false))
+        }
+        #expect(seen.isSuperset(of: [.sit, .wag, .play, .walk, .climb]))
+        #expect(!seen.contains(.sleep))
+    }
+
+    @Test func napsWhileYouAreAwayAndStretchesWhenYouComeBack() {
+        var brain = CompanionBrain(now: now, seed: 1)
+        #expect(brain.update(now: now.addingTimeInterval(10), away: CompanionBrain.napAfter - 1, hour: 14, hovering: false) != .sleep)
+        #expect(brain.update(now: now.addingTimeInterval(20), away: CompanionBrain.napAfter, hour: 14, hovering: false) == .sleep)
+        #expect(brain.update(now: now.addingTimeInterval(900), away: 1000, hour: 14, hovering: false) == .sleep)
+        #expect(brain.update(now: now.addingTimeInterval(901), away: 0.5, hour: 14, hovering: false) == .wake)
+        #expect(brain.update(now: now.addingTimeInterval(902), away: 1.5, hour: 14, hovering: false) == .wake)
+        #expect(brain.update(now: now.addingTimeInterval(901 + CompanionBrain.wakeLength), away: 4, hour: 14, hovering: false) != .wake)
+    }
+
+    @Test func dozesOffSoonerLateAtNight() {
+        var brain = CompanionBrain(now: now, seed: 1)
+        #expect(brain.update(now: now, away: CompanionBrain.nightNapAfter, hour: 2, hovering: false) == .sleep)
+        var day = CompanionBrain(now: now, seed: 1)
+        #expect(day.update(now: now, away: CompanionBrain.nightNapAfter, hour: 14, hovering: false) != .sleep)
+    }
+
+    @Test func greetsThePointerEvenFromANap() {
+        var brain = CompanionBrain(now: now, seed: 3)
+        _ = brain.update(now: now, away: 1000, hour: 14, hovering: false)
+        #expect(brain.update(now: now.addingTimeInterval(1), away: 1000, hour: 14, hovering: true) == .greet)
+        #expect(brain.update(now: now.addingTimeInterval(30), away: 0, hour: 14, hovering: true) == .greet)
+        #expect(brain.update(now: now.addingTimeInterval(31), away: 0, hour: 14, hovering: false) == .sit)
+    }
+}
+
+@Suite struct ScreenCornerTests {
+    @Test func picksTheNearestCornerAndRemembersIt() throws {
+        #expect(ScreenCorner.nearest(right: false, bottom: false) == .topLeft)
+        #expect(ScreenCorner.nearest(right: true, bottom: false) == .topRight)
+        #expect(ScreenCorner.nearest(right: false, bottom: true) == .bottomLeft)
+        #expect(ScreenCorner.nearest(right: true, bottom: true) == .bottomRight)
+        #expect(ScreenCorner.bottomRight.isRight && ScreenCorner.bottomRight.isBottom)
+        let old = try JSONDecoder().decode(Preferences.self, from: Data(#"{"theme":"ocean"}"#.utf8))
+        #expect(old.screenCorner == .topLeft)
+        var moved = Preferences.standard
+        moved.screenCorner = .bottomRight
+        #expect(try JSONDecoder().decode(Preferences.self, from: JSONEncoder().encode(moved)).screenCorner == .bottomRight)
+    }
+}

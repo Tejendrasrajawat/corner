@@ -67,6 +67,37 @@ public enum ThemeID: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Which corner of the screen the widget lives in.
+public enum ScreenCorner: String, Codable, CaseIterable, Sendable {
+    case topLeft, topRight, bottomLeft, bottomRight
+
+    public var isRight: Bool { self == .topRight || self == .bottomRight }
+    public var isBottom: Bool { self == .bottomLeft || self == .bottomRight }
+
+    public var name: String {
+        switch self {
+        case .topLeft: "Top left"
+        case .topRight: "Top right"
+        case .bottomLeft: "Bottom left"
+        case .bottomRight: "Bottom right"
+        }
+    }
+
+    /// The corner nearest a point, given whether it's in the right and the bottom half of the screen.
+    public static func nearest(right: Bool, bottom: Bool) -> ScreenCorner {
+        switch (right, bottom) {
+        case (false, false): .topLeft
+        case (true, false): .topRight
+        case (false, true): .bottomLeft
+        case (true, true): .bottomRight
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        self = ScreenCorner(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .topLeft
+    }
+}
+
 public struct Preferences: Codable, Equatable, Sendable {
     public var primaryZone: ZoneClock
     public var secondaryZones: [ZoneClock]
@@ -90,6 +121,10 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var clockStyle: ClockStyle
     /// Off until you set up the Claude Code hooks, since most people don't use Claude Code.
     public var showClaude: Bool
+    /// The clock, or a companion character, when nothing else needs the corner.
+    public var idleFace: IdleFace
+    public var companion: CompanionKind
+    public var screenCorner: ScreenCorner
 
     /// The older on/off tuck setting, still used by the menus' tuck toggle.
     public var tuckAway: Bool {
@@ -113,7 +148,10 @@ public struct Preferences: Codable, Equatable, Sendable {
         hidden: Bool = false,
         theme: ThemeID = .system,
         clockStyle: ClockStyle = .h24,
-        showClaude: Bool = false
+        showClaude: Bool = false,
+        idleFace: IdleFace = .clock,
+        companion: CompanionKind = .ninja,
+        screenCorner: ScreenCorner = .topLeft
     ) {
         self.primaryZone = primaryZone
         self.secondaryZones = secondaryZones
@@ -131,6 +169,9 @@ public struct Preferences: Codable, Equatable, Sendable {
         self.theme = theme
         self.clockStyle = clockStyle
         self.showClaude = showClaude
+        self.idleFace = idleFace
+        self.companion = companion
+        self.screenCorner = screenCorner
     }
 
     /// The Mac's own zone as the main clock, plus UTC.
@@ -168,6 +209,9 @@ public struct Preferences: Codable, Equatable, Sendable {
         theme = try c.decodeIfPresent(ThemeID.self, forKey: .theme) ?? d.theme
         clockStyle = try c.decodeIfPresent(ClockStyle.self, forKey: .clockStyle) ?? d.clockStyle
         showClaude = try c.decodeIfPresent(Bool.self, forKey: .showClaude) ?? d.showClaude
+        idleFace = try c.decodeIfPresent(IdleFace.self, forKey: .idleFace) ?? d.idleFace
+        companion = try c.decodeIfPresent(CompanionKind.self, forKey: .companion) ?? d.companion
+        screenCorner = try c.decodeIfPresent(ScreenCorner.self, forKey: .screenCorner) ?? d.screenCorner
     }
 
     private enum LegacyKeys: String, CodingKey {
