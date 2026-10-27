@@ -522,6 +522,42 @@ tr:last-child td { border-bottom: 0; }
 .download-head a { color: var(--text); }
 .spinner { width: 46px; height: 46px; margin: 0 auto 28px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.1); border-top-color: var(--violet); border-right-color: var(--cyan); animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* The install command in the hero and the closing call to action. */
+.hero-install { width: 100%; max-width: 640px; margin-top: 34px; }
+.cmd-hero { margin-top: 0; padding: 10px 10px 10px 18px; border-radius: 14px; background: rgba(0, 0, 0, 0.5); box-shadow: 0 18px 50px -20px rgba(139, 92, 246, 0.6); }
+.cmd-hero code { font-size: 0.95rem; }
+.hero-alt { margin-top: 12px; font-size: 0.92rem; color: var(--muted); }
+.hero-alt a { color: var(--text); }
+.prompt { font-family: var(--mono); color: var(--cyan); user-select: none; }
+.final .cmd-hero { max-width: 620px; margin: 26px auto 0; text-align: left; }
+
+/* Install: Terminal first, the disk image as the alternative. */
+.install-main { padding: 28px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line-strong); }
+.install-steps { list-style: none; margin: 0 0 20px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.install-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.install-steps .num { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font: 600 0.9rem var(--mono); color: #fff; background: var(--brand); }
+.install-steps b { display: block; font-size: 1rem; }
+.install-steps span:not(.num) { display: block; margin-top: 4px; color: var(--muted); font-size: 0.9rem; }
+.cmd-big { margin-top: 0; padding: 12px 12px 12px 18px; }
+.cmd-big code { font-size: 1rem; }
+.install-fine { margin-top: 14px; color: var(--muted); font-size: 0.9rem; }
+.install-fine a, .install-alt a:not(.btn) { color: var(--text); }
+.install-alt { display: flex; align-items: center; gap: 24px; margin-top: 16px; padding: 22px 28px; border-radius: var(--radius); background: transparent; border: 1px dashed var(--line-strong); }
+.install-alt h3 { font-size: 1.05rem; }
+.install-alt p { margin-top: 6px; color: var(--muted); font-size: 0.92rem; }
+.install-alt .btn { flex: none; }
+
+/* Companions: each one's GIF over a drawn quarter, like the real corner. */
+.companions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.companion { margin: 0; padding: 18px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); }
+.companion-stage { position: relative; aspect-ratio: 1; border-bottom-right-radius: 100%; overflow: hidden;
+  background: radial-gradient(circle at 0 0, #2a2f63 0%, #1b1e3f 60%, #14162e 100%); box-shadow: inset -3px -3px 0 rgba(255, 255, 255, 0.08); }
+.companion-stage img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.companion figcaption { margin-top: 14px; font-family: var(--font); text-transform: none; letter-spacing: 0; }
+.companion b { display: block; font-size: 1.05rem; }
+.companion figcaption span { color: var(--muted); font-size: 0.9rem; }
+.companions-note { margin-top: 18px; text-align: center; color: var(--dim); font-size: 0.9rem; }
+
 /* Commands to paste into Terminal, with a copy button. */
 .terminal-alt { margin-top: 16px; padding: 24px 28px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); }
 .terminal-alt h3 { font-size: 1.05rem; }
@@ -574,6 +610,10 @@ tr:last-child td { border-bottom: 0; }
   .themes, .claude { grid-template-columns: 1fr; gap: 40px; }
   .mock-window { left: 40%; width: 56%; }
   .verify-steps { grid-template-columns: 1fr; }
+  .install-steps { grid-template-columns: 1fr; }
+  .install-alt { flex-direction: column; align-items: flex-start; }
+  .companions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cmd-hero code, .cmd-big code { font-size: 0.82rem; }
   .verify-steps li { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); column-gap: 28px; }
   .verify-steps li > .mac-window { grid-row: span 2; }
   .verify-steps h3 { margin-top: 0; align-self: end; }

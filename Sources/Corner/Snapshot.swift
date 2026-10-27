@@ -1,6 +1,8 @@
 import AppKit
 import CornerKit
+import ImageIO
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// `Corner --snapshot <folder>` draws each widget state to PNGs with sample data and exits.
 /// It needs no Screen Recording permission, so it works for checking layout and for the README.
@@ -137,6 +139,11 @@ enum Snapshot {
                 }
             }.padding(8).themed(Theme.named(.midnight)),
                    scheme: scheme, to: dir.appendingPathComponent("companions-\(suffix).png"))
+            if scheme == .dark {
+                for kind in CompanionKind.allCases {
+                    writeCompanionGIF(kind, to: dir.appendingPathComponent("site-companion-\(kind.rawValue).gif"))
+                }
+            }
             renderWindow(SettingsView(store: previewStore(twelve), connectCalendar: {}),
                          size: CGSize(width: SettingsView.width, height: SettingsView.height),
                          scheme: scheme, to: dir.appendingPathComponent("settings-\(suffix).png"))
@@ -307,6 +314,30 @@ enum Snapshot {
 
     /// Draws the view over a stand-in desktop so the corner reads as it does on screen.
     /// `backdrop: false` gives an unpadded image for the website: transparent, or on `fill`.
+    /// The website's companion previews: a character's trick, its climb and its hello, as a looping
+    /// GIF with a see-through background (the page draws the corner behind it), pixels enlarged
+    /// without smoothing.
+    static func writeCompanionGIF(_ kind: CompanionKind, to url: URL) {
+        let scale = kind == .cat ? 6 : 4
+        let sequence: [CompanionActivity] = [.play, .climb, .greet]
+        let frames = sequence.flatMap { activity in
+            CompanionFrames.frames(kind, activity).map { ($0, 1 / CompanionFrames.loop(activity).fps) }
+        }
+        guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.gif.identifier as CFString, frames.count, nil) else { return }
+        CGImageDestinationSetProperties(destination, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]] as CFDictionary)
+        for (frame, delay) in frames {
+            let w = frame.width * scale, h = frame.height * scale
+            guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { continue }
+            ctx.interpolationQuality = .none
+            ctx.draw(frame, in: CGRect(x: 0, y: 0, width: w, height: h))
+            guard let big = ctx.makeImage() else { continue }
+            CGImageDestinationAddImage(destination, big, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: delay]] as CFDictionary)
+        }
+        CGImageDestinationFinalize(destination)
+    }
+
     /// Native controls (pop-up menus, segmented pickers, forms) don't come out of ImageRenderer, so
     /// windows like Settings are drawn by AppKit in an offscreen window instead.
     static func renderWindow<V: View>(_ view: V, size: CGSize, scheme: ColorScheme, to url: URL) {

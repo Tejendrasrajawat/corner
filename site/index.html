@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Corner: timers, meetings and to-dos in the corner of your Mac</title>
-  <meta name="description" content="Corner is a free macOS widget that lives in the top-left corner of your screen: timers, countdowns, your next meeting, to-dos, world clocks and your Claude Code sessions, one click away.">
+  <meta name="description" content="Corner is a free macOS widget that lives in a corner of your screen: timers, countdowns, your next meeting, to-dos, world clocks, your Claude Code sessions and a pixel companion, one click away.">
   <meta property="og:title" content="Corner for Mac">
   <meta property="og:description" content="Everything time-sensitive, one corner away. Timers, countdowns, your next meeting and to-dos for macOS.">
   <meta property="og:image" content="/img/themes-dark.jpg">
@@ -72,12 +72,12 @@
       </a>
       <nav aria-label="Main">
         <a href="#features">Features</a>
+        <a href="#companions">Companions</a>
         <a href="#claude">Claude Code</a>
         <a href="#themes">Themes</a>
-        <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </nav>
-      <a class="btn btn-small btn-primary" href="/download">Download</a>
+      <a class="btn btn-small btn-primary" href="#install">Install</a>
     </div>
   </header>
 
@@ -87,15 +87,12 @@
       <div class="glow glow-a" aria-hidden="true"></div>
       <div class="glow glow-b" aria-hidden="true"></div>
       <div class="container hero-copy">
-        <a class="pill reveal" href="#claude"><span class="pill-tag">New in 1.2</span> Click a Claude session to jump to its chat <span aria-hidden="true">→</span></a>
+        <a class="pill reveal" href="#companions"><span class="pill-tag">New in 1.3</span> Pixel companions, and any corner of your screen <span aria-hidden="true">→</span></a>
         <h1 class="reveal">Everything time&#8209;sensitive,<br><span class="grad">one corner away.</span></h1>
-        <p class="lede reveal">Corner is a tiny macOS widget for timers, countdowns, your next meeting and to-dos. It sits quietly in the top-left of your screen, shows the one thing that matters right now, and opens when you need it.</p>
-        <div class="cta reveal">
-          <a class="btn btn-primary btn-large" href="/download">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Download for macOS
-          </a>
-          <a class="btn btn-ghost btn-large" href="#how">See how it works</a>
+        <p class="lede reveal">Corner is a tiny macOS widget for timers, countdowns, your next meeting and to-dos. It sits quietly in a corner of your screen, shows the one thing that matters right now, and opens when you need it.</p>
+        <div class="hero-install reveal">
+          <div class="cmd cmd-hero"><span class="prompt" aria-hidden="true">$</span><code id="hero-cmd">curl -fsSL https://corner-mac.vercel.app/install.sh | sh</code><button class="btn btn-small btn-primary" type="button" data-copy="hero-cmd">Copy</button></div>
+          <p class="hero-alt">Paste it into Terminal to install. Or <a href="/download">download the .dmg</a> · <a href="#install">how it works</a></p>
         </div>
         <ul class="trust reveal" aria-label="At a glance">
           <li>Free forever</li><li>No account</li><li>Works offline</li><li>macOS 14+</li><li>Apple silicon &amp; Intel</li>
@@ -194,7 +191,7 @@
           <article class="tile reveal">
             <div class="tile-copy">
               <h3>Out of your way</h3>
-              <p>Keep it full size, let it shrink until you hover, or tuck it into a dot so window buttons stay clickable.</p>
+              <p>Drag it to any corner of the screen. Keep it full size, let it shrink until you hover, or tuck it into a dot so window buttons stay clickable.</p>
             </div>
             <div class="modes">
               <figure><img src="/img/site-state-timer.png" alt="" width="60" height="60" loading="lazy"><figcaption>Full</figcaption></figure>
@@ -224,6 +221,36 @@
             </div>
           </article>
         </div>
+      </div>
+    </section>
+
+    <!-- Companions -->
+    <section id="companions" class="section">
+      <div class="container">
+        <header class="section-head reveal">
+          <p class="eyebrow">New in 1.3 · Companions</p>
+          <h2>A little friend in the corner</h2>
+          <p>When nothing needs the corner, a pixel companion moves in. They wander about, climb the side of your screen, hang off the menu bar, nap when you step away and wave when you point at them.</p>
+        </header>
+        <div class="companions">
+          <figure class="companion reveal">
+            <div class="companion-stage"><img src="/img/site-companion-ninja.gif" alt="The ninja throwing a star, climbing the edge of the screen and waving" width="176" height="176" loading="lazy"></div>
+            <figcaption><b>Ninja</b><span>Throws spinning stars</span></figcaption>
+          </figure>
+          <figure class="companion reveal">
+            <div class="companion-stage"><img src="/img/site-companion-swordsman.gif" alt="The swordsman practising a cut, climbing and waving" width="176" height="176" loading="lazy"></div>
+            <figcaption><b>Swordsman</b><span>Practises his cuts</span></figcaption>
+          </figure>
+          <figure class="companion reveal">
+            <div class="companion-stage"><img src="/img/site-companion-mage.gif" alt="The mage casting sparkles, climbing and waving" width="176" height="176" loading="lazy"></div>
+            <figcaption><b>Mage</b><span>Casts a ring of sparkles</span></figcaption>
+          </figure>
+          <figure class="companion reveal">
+            <div class="companion-stage"><img src="/img/site-companion-cat.gif" alt="The cat chasing yarn, climbing the edge of the screen and waving with hearts" width="180" height="180" loading="lazy"></div>
+            <figcaption><b>Cat</b><span>Chases yarn, walks the ceiling</span></figcaption>
+          </figure>
+        </div>
+        <p class="companions-note reveal">Pick one in Settings → Idle corner. Each move is drawn once and played by macOS, so a companion costs about as much CPU as the clock.</p>
       </div>
     </section>
 
@@ -280,37 +307,36 @@
     </section>
 
     <!-- How it works -->
-    <section id="how" class="section">
+    <section id="install" class="section">
+      <span id="how" aria-hidden="true"></span>
       <div class="container">
         <header class="section-head reveal">
-          <p class="eyebrow">Get started</p>
-          <h2>Up and running in a minute</h2>
+          <p class="eyebrow">Install</p>
+          <h2>One line in Terminal</h2>
+          <p>The quickest way in, with no security prompt to click through.</p>
         </header>
-        <ol class="how">
-          <li class="reveal">
-            <span class="num">1</span>
-            <h3>Download and drag</h3>
-            <p>Open <a href="/download">Corner-1.2.dmg</a> and drag Corner onto Applications.</p>
-          </li>
-          <li class="reveal">
-            <span class="num">2</span>
-            <h3>Allow it once</h3>
-            <p>Corner isn't notarized by Apple yet, so macOS says it can't verify it. In <b>System Settings → Privacy &amp; Security</b>, click <b>Open Anyway</b>. <a href="/download?preview#verify">Show me how</a></p>
-          </li>
-          <li class="reveal">
-            <span class="num">3</span>
-            <h3>Look top-left</h3>
-            <p>Corner appears under the Apple menu, with a timer icon in the menu bar. Press <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> to add your first timer.</p>
-          </li>
-        </ol>
-        <div class="terminal-alt reveal">
-          <h3>Or install from Terminal, with no security prompt</h3>
-          <p>It downloads the same disk image, checks its SHA-256, copies Corner into Applications and opens it. macOS doesn't ask, because the download didn't come through a browser. <a href="/install.sh">Read the script</a>.</p>
-          <div class="cmd"><code id="install-cmd">curl -fsSL https://corner-mac.vercel.app/install.sh | sh</code><button class="btn btn-small btn-ghost" type="button" data-copy="install-cmd">Copy</button></div>
+        <div class="install-main reveal">
+          <ol class="install-steps">
+            <li><span class="num">1</span><div><b>Open Terminal</b><span>Press <kbd>⌘</kbd><kbd>Space</kbd>, type Terminal, press Return.</span></div></li>
+            <li><span class="num">2</span><div><b>Paste this and press Return</b><span>It asks for nothing; it takes a few seconds.</span></div></li>
+            <li><span class="num">3</span><div><b>Look at your corner</b><span>Corner opens in the top-left. Press <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> for your first timer.</span></div></li>
+          </ol>
+          <div class="cmd cmd-big"><span class="prompt" aria-hidden="true">$</span><code id="install-cmd">curl -fsSL https://corner-mac.vercel.app/install.sh | sh</code><button class="btn btn-small btn-primary" type="button" data-copy="install-cmd">Copy</button></div>
+          <p class="install-fine">It downloads Corner 1.3 (2.3 MB), checks its SHA-256 against the one at the bottom of this page, puts Corner in Applications and opens it. macOS doesn't ask, because the download didn't come through a browser. <a href="/install.sh">Read the script</a>.</p>
+        </div>
+        <div class="install-alt reveal">
+          <div>
+            <h3>Prefer a regular download?</h3>
+            <p>Open the disk image and drag Corner onto Applications. Corner isn't notarized by Apple yet, so the first time macOS says it can't verify it: allow it once in System Settings → Privacy &amp; Security. <a href="/download?preview#verify">Step by step</a></p>
+          </div>
+          <a class="btn btn-ghost btn-large" href="/download">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 15.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download Corner-1.3.dmg
+          </a>
         </div>
 
         <dl class="stats reveal">
-          <div><dt>Download</dt><dd>2.0 MB</dd></div>
+          <div><dt>Download</dt><dd>2.3 MB</dd></div>
           <div><dt>Accounts needed</dt><dd>0</dd></div>
           <div><dt>Themes</dt><dd>7</dd></div>
           <div><dt>Runs on</dt><dd>M-series &amp; Intel</dd></div>
@@ -367,9 +393,11 @@
             <li>Seven themes</li>
             <li>Shrink, tuck or hide</li>
             <li>Claude Code sessions, a click from their chat</li>
+            <li>Pixel companions</li>
+            <li>Any corner of the screen</li>
           </ul>
-          <a class="btn btn-primary btn-large btn-block" href="/download">Download for macOS</a>
-          <p class="fine">Version 1.2 · 2.0 MB · macOS 14 Sonoma or later</p>
+          <a class="btn btn-primary btn-large btn-block" href="#install">Install with one line</a>
+          <p class="fine">Version 1.3 · 2.3 MB · macOS 14 Sonoma or later · <a href="/download">or download the .dmg</a></p>
         </div>
 
         <!-- Shown once there's a Buy Me a Coffee link: set the href and remove `hidden`. -->
@@ -389,8 +417,16 @@
         </header>
         <div class="faq reveal">
           <details>
+            <summary>Can I put it in another corner?</summary>
+            <p>Yes: drag it to any corner of the screen and let go, and it settles into the nearest one. Settings → Corner → Screen corner does the same. In the bottom corners it sits just above the Dock.</p>
+          </details>
+          <details>
             <summary>Will it cover the buttons in the corner of my windows?</summary>
-            <p>It can, so choose <em>Shrink, grow on hover</em> or <em>Tuck into the edge</em> under Settings → "When not in use". Tucked, it's a 10-point dot and clicks go straight through. Push the pointer into the left edge of the screen to bring it back.</p>
+            <p>It can, so move it to a quieter corner, or choose <em>Shrink, grow on hover</em> or <em>Tuck into the edge</em> under Settings → "When not in use". Tucked, it's a 10-point dot and clicks go straight through. Push the pointer into that side of the screen to bring it back.</p>
+          </details>
+          <details>
+            <summary>What are companions, and do they slow my Mac down?</summary>
+            <p>A ninja, a swordsman, a mage or a cat that lives in the corner while nothing else needs it (Settings → Idle corner). No: each move is drawn once as a few small pixel frames and macOS plays them by itself, which costs about 0.1% of one CPU core, the same as the clock.</p>
           </details>
           <details>
             <summary>Does it work in full-screen apps and on every desktop?</summary>
@@ -414,7 +450,7 @@
           </details>
           <details>
             <summary>How do I uninstall it?</summary>
-            <p>Quit from the menu bar icon, delete Corner from Applications, and delete <code>~/Library/Application Support/Corner</code> to remove your saved timers and to-dos.</p>
+            <p>Quit from the menu bar icon, delete Corner from Applications (or <code>~/Applications</code> if the installer put it there), and delete <code>~/Library/Application Support/Corner</code> to remove your saved timers and to-dos.</p>
           </details>
         </div>
       </div>
@@ -425,8 +461,9 @@
       <div class="container">
         <div class="final reveal">
           <h2>Give your Mac a calmer corner.</h2>
-          <p>Free, private, and 2.0 MB. Set up in a minute.</p>
-          <a class="btn btn-primary btn-large" href="/download">Download for macOS</a>
+          <p>Free, private, and 2.3 MB. One line to install.</p>
+          <div class="cmd cmd-hero"><span class="prompt" aria-hidden="true">$</span><code id="final-cmd">curl -fsSL https://corner-mac.vercel.app/install.sh | sh</code><button class="btn btn-small btn-primary" type="button" data-copy="final-cmd">Copy</button></div>
+          <p class="hero-alt">Or <a href="/download">download the .dmg</a></p>
         </div>
       </div>
     </section>
@@ -446,19 +483,19 @@
         <a href="#features">Features</a>
         <a href="#claude">Claude Code</a>
         <a href="#themes">Themes</a>
-        <a href="#pricing">Pricing</a>
-        <a href="/download">Download</a>
+        <a href="#companions">Companions</a>
+        <a href="#install">Install</a>
       </div>
       <div>
         <h4>Help</h4>
-        <a href="#how">Install guide</a>
+        <a href="/download">Download the .dmg</a>
         <a href="#quick-add">Quick add</a>
         <a href="#faq">FAQ</a>
       </div>
     </div>
     <div class="container footer-fine">
-      <p>Corner 1.2 for macOS. This site counts visits with Vercel Web Analytics: no cookies, no personal data.</p>
-      <p class="checksum">SHA-256 of Corner-1.2.dmg: <code>1f21b6e4db738645ddc25c38e3a9af4eeb6db5ec46169fc4197c2c997bbd5717</code></p>
+      <p>Corner 1.3 for macOS. This site counts visits with Vercel Web Analytics: no cookies, no personal data.</p>
+      <p class="checksum">SHA-256 of Corner-1.3.dmg: <code>5d08fc4ae7e2fa5325d6c830251ad9bc1782a16ddcc146be3a13ab29ec045579</code></p>
     </div>
   </footer>
 

@@ -9,8 +9,8 @@
 # SHA-256 (the same one printed on the website) and stops if they differ.
 
 # Set by scripts/package-release.sh for each release.
-version="1.2"
-sha256="1f21b6e4db738645ddc25c38e3a9af4eeb6db5ec46169fc4197c2c997bbd5717"
+version="1.3"
+sha256="5d08fc4ae7e2fa5325d6c830251ad9bc1782a16ddcc146be3a13ab29ec045579"
 
 set -eu
 
