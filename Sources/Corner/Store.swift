@@ -211,6 +211,12 @@ final class Store: ObservableObject {
         mutate { $0 = next }
     }
 
+    func reconcileClaude(_ turns: [String: ClaudeTranscript.Turn]) {
+        var next = state
+        guard next.reconcileClaude(turns, at: Date()) else { return }
+        mutate { $0 = next }
+    }
+
     func clearDoneClaude() {
         mutate { $0.clearDoneClaudeSessions() }
     }

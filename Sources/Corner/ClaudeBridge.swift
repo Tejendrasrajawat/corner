@@ -37,9 +37,44 @@ final class ClaudeBridge {
             try? fm.removeItem(at: reading)
         }
         refreshChats()
+        checkQuietSessions()
         if let size = (try? fm.attributesOfItem(atPath: inbox.path))?[.size] as? Int, size > 0 {
             try? fm.moveItem(at: inbox, to: reading)
         }
+    }
+
+    // MARK: - Turns that end without a Stop
+
+    private var lastQuietCheck = Date.distantPast
+    private var checkingQuiet = false
+
+    /// Claude Code sends no Stop when you interrupt a turn or it ends on an API error, so every 15
+    /// seconds each session that's gone quiet while working is checked against the end of its
+    /// transcript. Files are read off the main thread.
+    private func checkQuietSessions() {
+        let now = Date()
+        guard !checkingQuiet, store.state.settings.showClaude, now.timeIntervalSince(lastQuietCheck) >= 15 else { return }
+        var transcripts: [String: String] = [:]
+        for s in store.state.claudeSessions where s.status != .done && now.timeIntervalSince(s.updatedAt) >= AppState.claudeQuietAfter {
+            transcripts[s.id] = s.transcriptPath
+        }
+        guard !transcripts.isEmpty else { return }
+        lastQuietCheck = now
+        checkingQuiet = true
+        Task {
+            let turns = await Task.detached(priority: .utility) { transcripts.compactMapValues { Self.lastTurn(transcript: $0) } }.value
+            checkingQuiet = false
+            store.reconcileClaude(turns)
+        }
+    }
+
+    nonisolated static func lastTurn(transcript path: String) -> ClaudeTranscript.Turn? {
+        guard let file = FileHandle(forReadingAtPath: path) else { return nil }
+        defer { try? file.close() }
+        guard let size = try? file.seekToEnd() else { return nil }
+        let start = size > UInt64(ClaudeTranscript.tailLength) ? size - UInt64(ClaudeTranscript.tailLength) : 0
+        guard (try? file.seek(toOffset: start)) != nil, let tail = try? file.readToEnd() else { return nil }
+        return ClaudeTranscript.lastTurn(in: tail, fromStart: start == 0)
     }
 
     // MARK: - Claude desktop chats

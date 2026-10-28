@@ -583,7 +583,8 @@ private func parse(_ text: String) -> Result<ParsedEntry, ParseError> {
     @Test func parsesHookJSON() {
         let line = #"{"session_id":"abc","transcript_path":"/t.jsonl","cwd":"/Users/me/Desktop/Corner","hook_event_name":"UserPromptSubmit","prompt":"make corner smallest on hover"}"#
         let e = ClaudeEvent.parse(line)
-        #expect(e == ClaudeEvent(kind: .promptSubmitted, sessionID: "abc", cwd: "/Users/me/Desktop/Corner", prompt: "make corner smallest on hover"))
+        #expect(e == ClaudeEvent(kind: .promptSubmitted, sessionID: "abc", cwd: "/Users/me/Desktop/Corner", prompt: "make corner smallest on hover",
+                                 transcriptPath: "/t.jsonl"))
         #expect(ClaudeEvent.parse("") == nil)
         #expect(ClaudeEvent.parse("{not json") == nil)
         #expect(ClaudeEvent.parse(#"{"session_id":"abc","hook_event_name":"PreCompact"}"#) == nil)
@@ -668,6 +669,54 @@ private func parse(_ text: String) -> Result<ParsedEntry, ParseError> {
         #expect(s.claudeSessions.isEmpty)
     }
 
+    @Test func aSubagentFinishingLaterDoesNotRestartTheSession() {
+        var s = claudeState()
+        _ = s.apply(event(.promptSubmitted), at: now)
+        _ = s.apply(event(.stopped), at: now.addingTimeInterval(60))
+        _ = s.apply(event(.subagentStopped), at: now.addingTimeInterval(90))
+        #expect(s.claudeSessions[0].status == .done)
+        #expect(s.claudeSessions[0].subagentsDone == 0)
+        // Once it has left the card, Claude Code's idle compaction (a subagent) an hour on, or an
+        // idle reminder, doesn't bring it back as working.
+        _ = s.advance(to: now.addingTimeInterval(60 + 31 * 60), calendar: calendar)
+        #expect(s.claudeSessions.isEmpty)
+        #expect(s.apply(event(.subagentStopped), at: now.addingTimeInterval(3600)) == nil)
+        _ = s.apply(event(.notification, message: "Claude is waiting for your input", type: "idle_prompt"), at: now.addingTimeInterval(3600))
+        _ = s.apply(event(.notification, message: "Claude is waiting for your input"), at: now.addingTimeInterval(3600))
+        #expect(s.claudeSessions.isEmpty)
+        // A turn under way still shows up.
+        _ = s.apply(event(.notification, message: "Claude needs your permission to use Bash", type: "permission_prompt"), at: now.addingTimeInterval(3700))
+        #expect(s.claudeSessions.first?.status == .needsYou)
+    }
+
+    @Test func aQuietTurnTheTranscriptShowsEndedIsDone() {
+        var s = claudeState()
+        _ = s.apply(ClaudeEvent(kind: .promptSubmitted, sessionID: "s1", transcriptPath: "/t.jsonl"), at: now)
+        #expect(s.claudeSessions[0].transcriptPath == "/t.jsonl")
+        let interrupted: [String: ClaudeTranscript.Turn] = ["s1": .ended(at: now.addingTimeInterval(100), reply: nil, interrupted: true)]
+        let stillRunning = s.reconcileClaude(["s1": .running], at: now.addingTimeInterval(300))
+        // Too soon after the turn ended: its Stop may still be on the way.
+        let tooSoon = s.reconcileClaude(interrupted, at: now.addingTimeInterval(110))
+        #expect(!stillRunning && !tooSoon)
+        #expect(s.claudeSessions[0].status == .working)
+        let ended = s.reconcileClaude(interrupted, at: now.addingTimeInterval(140))
+        #expect(ended)
+        #expect(s.claudeSessions[0].status == .done)
+        #expect(s.claudeSessions[0].finishedAt == now.addingTimeInterval(100))
+        #expect(s.claudeSessions[0].reply == "Interrupted")
+        #expect(s.claudeSessions[0].seen)
+        let again = s.reconcileClaude(interrupted, at: now.addingTimeInterval(200))
+        #expect(!again)
+
+        // An error ending isn't one you chose, so it shows like a finished turn.
+        _ = s.apply(event(.promptSubmitted), at: now.addingTimeInterval(400))
+        let failed = s.reconcileClaude(["s1": .ended(at: now.addingTimeInterval(410), reply: "API Error: overloaded", interrupted: false)],
+                                       at: now.addingTimeInterval(450))
+        #expect(failed)
+        #expect(s.claudeSessions[0].reply == "API Error: overloaded")
+        #expect(!s.claudeSessions[0].seen)
+    }
+
     @Test func runningTimerOutranksClaudeWorkingInTheCornerAndMenuBar() {
         var s = claudeState()
         _ = s.apply(event(.promptSubmitted), at: now)
@@ -684,6 +733,56 @@ private func parse(_ text: String) -> Result<ParsedEntry, ParseError> {
         _ = s.apply(event(.promptSubmitted, prompt: "hello"), at: now)
         let decoded = try JSONDecoder().decode(AppState.self, from: JSONEncoder().encode(s))
         #expect(decoded.claudeSessions == s.claudeSessions)
+    }
+}
+
+@Suite struct ClaudeTranscriptTests {
+    private func turn(_ lines: String..., fromStart: Bool = true) -> ClaudeTranscript.Turn? {
+        ClaudeTranscript.lastTurn(in: Data(lines.joined(separator: "\n").utf8), fromStart: fromStart)
+    }
+
+    private let prompt = #"{"type":"user","timestamp":"2026-10-27T19:53:15.885Z","message":{"role":"user","content":"Commit and push"}}"#
+    private let toolCall = #"{"type":"assistant","timestamp":"2026-10-27T19:53:21.194Z","message":{"stop_reason":"tool_use","content":[{"type":"tool_use","name":"Bash"}]}}"#
+    private let reply = #"{"type":"assistant","timestamp":"2026-10-27T19:53:33.604Z","message":{"stop_reason":"end_turn","content":[{"type":"text","text":"Pushed to GitHub.\nAll clean."}]}}"#
+    private let stopHooks = #"{"type":"system","subtype":"stop_hook_summary","timestamp":"2026-10-27T19:53:35.479Z","preventedContinuation":false}"#
+    private let bookkeeping = #"{"type":"last-prompt","sessionId":"s1"}"#
+
+    @Test func runningWhileAToolRunsOrClaudeThinks() {
+        #expect(turn(prompt, toolCall, bookkeeping) == .running)
+        #expect(turn(reply, stopHooks, prompt) == .running)
+    }
+
+    @Test func endedOnceTheStopHooksRan() {
+        let stopped = ISO8601DateFormatter.withFractions.date(from: "2026-10-27T19:53:35.479Z")
+        #expect(turn(prompt, reply, stopHooks, bookkeeping) == .ended(at: stopped, reply: "Pushed to GitHub.", interrupted: false))
+        // Claude's last message, its Stop hooks not run yet.
+        #expect(turn(prompt, reply) == .ended(at: ISO8601DateFormatter.withFractions.date(from: "2026-10-27T19:53:33.604Z"),
+                                              reply: "Pushed to GitHub.", interrupted: false))
+        // A Stop hook that sends Claude back to work.
+        #expect(turn(reply, #"{"type":"system","subtype":"stop_hook_summary","preventedContinuation":true}"#) == .running)
+    }
+
+    @Test func interruptsAndErrorsEndTheTurn() {
+        let interrupt = #"{"type":"user","timestamp":"2026-10-27T20:00:00Z","message":{"content":[{"type":"text","text":"[Request interrupted by user for tool use]"}]}}"#
+        #expect(turn(toolCall, interrupt) == .ended(at: Date(timeIntervalSince1970: 1_793_131_200), reply: nil, interrupted: true))
+        let error = #"{"type":"assistant","isApiErrorMessage":true,"message":{"stop_reason":"stop_sequence","content":[{"type":"text","text":"API Error: Can't reach the API server"}]}}"#
+        #expect(turn(prompt, error) == .ended(at: nil, reply: "API Error: Can't reach the API server", interrupted: false))
+    }
+
+    @Test func skipsTheCutLineAndSaysNothingWithoutEntries() {
+        // The tail starts partway through an entry: that line isn't read.
+        #expect(turn(reply, toolCall, fromStart: false) == .running)
+        #expect(turn(String(stopHooks.suffix(40)), fromStart: false) == nil)
+        #expect(turn(bookkeeping) == nil)
+        #expect(turn("") == nil)
+    }
+}
+
+extension ISO8601DateFormatter {
+    static var withFractions: ISO8601DateFormatter {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
     }
 }
 

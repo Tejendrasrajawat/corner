@@ -45,6 +45,10 @@ Stop, SubagentStop, SessionEnd) to `~/.claude/settings.json`, keeping everything
   outranks a working session.
 - Notifications and chimes go out when a session needs you, and when a turn that took 30 seconds
   or more finishes, showing the start of Claude's reply.
+- Claude Code sends no Stop when you interrupt a turn or it ends on an API error, and its idle
+  compaction finishes a subagent long after a turn. So a session that goes quiet for 30 seconds
+  while working is checked against the end of its transcript, and a subagent finishing never
+  brings back a session that has left the card.
 - Sessions are named after their chat in the Claude app (from its records in
   `~/Library/Application Support/Claude/claude-code-sessions`, matched on the hook's session id),
   or after their folder for a Terminal session. Click a session, or its notification, to open the

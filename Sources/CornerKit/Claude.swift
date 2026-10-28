@@ -26,6 +26,8 @@ public struct ClaudeSession: Codable, Equatable, Identifiable, Sendable {
     /// started in Terminal, or until Corner has found the chat.
     public var chatID: String?
     public var title: String?
+    /// Where Claude Code writes the session's transcript, from its hooks.
+    public var transcriptPath: String?
 
     public init(id: String, cwd: String, status: ClaudeStatus, at now: Date) {
         self.id = id
@@ -82,9 +84,10 @@ public struct ClaudeEvent: Equatable, Sendable {
     public var notificationType: String?
     /// Stop's `last_assistant_message`.
     public var lastMessage: String?
+    public var transcriptPath: String?
 
     public init(kind: Kind, sessionID: String, cwd: String = "", prompt: String? = nil, message: String? = nil,
-                notificationType: String? = nil, lastMessage: String? = nil) {
+                notificationType: String? = nil, lastMessage: String? = nil, transcriptPath: String? = nil) {
         self.kind = kind
         self.sessionID = sessionID
         self.cwd = cwd
@@ -92,6 +95,7 @@ public struct ClaudeEvent: Equatable, Sendable {
         self.message = message
         self.notificationType = notificationType
         self.lastMessage = lastMessage
+        self.transcriptPath = transcriptPath
     }
 
     /// An inbox line is "<unix seconds> <hook JSON>", written by the hook script. The time lets
@@ -115,7 +119,8 @@ public struct ClaudeEvent: Equatable, Sendable {
         return ClaudeEvent(kind: kind, sessionID: id, cwd: object["cwd"] as? String ?? "",
                            prompt: object["prompt"] as? String, message: object["message"] as? String,
                            notificationType: object["notification_type"] as? String,
-                           lastMessage: object["last_assistant_message"] as? String)
+                           lastMessage: object["last_assistant_message"] as? String,
+                           transcriptPath: object["transcript_path"] as? String)
     }
 }
 
@@ -128,6 +133,8 @@ extension AppState {
     public static let claudeDoneCornerWindow: TimeInterval = 10 * 60
     /// A session that goes quiet this long without a Stop (killed, crashed) is dropped.
     public static let claudeStaleAfter: TimeInterval = 12 * 3600
+    /// A working session with no hook event for this long is checked against its transcript.
+    public static let claudeQuietAfter: TimeInterval = 30
 
     /// Applies one hook event. Returns an alert when Claude needs you, or finished a turn long
     /// enough that you've probably looked away.
@@ -137,13 +144,19 @@ extension AppState {
             if pinned == .claude(event.sessionID) { pinned = nil }
             return nil
         }
-        // Sessions that were already running when the hooks went in show up on their next event.
-        let index = claudeSessions.firstIndex { $0.id == event.sessionID } ?? {
+        // Sessions that were already running when the hooks went in show up on their next event, if
+        // it comes from a turn in progress. A subagent finishing doesn't mean Claude is working:
+        // Claude Code's idle compaction runs as one long after a turn ends, and would otherwise
+        // bring back a finished session as working, with no Stop to come.
+        let known = claudeSessions.firstIndex { $0.id == event.sessionID }
+        guard known != nil || Self.startsSession(event) else { return nil }
+        let index = known ?? {
             claudeSessions.append(ClaudeSession(id: event.sessionID, cwd: event.cwd, status: .working, at: now))
             return claudeSessions.count - 1
         }()
         var s = claudeSessions[index]
         if !event.cwd.isEmpty { s.cwd = event.cwd }
+        if let path = event.transcriptPath, !path.isEmpty { s.transcriptPath = path }
         s.updatedAt = now
         var alert: AlertEvent?
 
@@ -181,7 +194,8 @@ extension AppState {
             s.reply = event.lastMessage.map(Self.snippet).flatMap { $0.isEmpty ? nil : $0 }
             if wasActive && s.elapsed(at: now) >= Self.claudeNotifyAfter { alert = .claudeDone(s) }
         case .subagentStopped:
-            s.subagentsDone += 1
+            // One finishing after the turn (the idle compaction) isn't part of it.
+            if s.status != .done { s.subagentsDone += 1 }
         case .sessionEnded:
             break
         }
@@ -189,11 +203,50 @@ extension AppState {
         return alert
     }
 
+    /// Whether an event from a session Corner isn't showing means a turn is under way.
+    static func startsSession(_ event: ClaudeEvent) -> Bool {
+        switch event.kind {
+        case .promptSubmitted, .toolFinished, .stopped: true
+        case .notification: notificationNeedsYou(event) && !isIdleReminder(event)
+        case .subagentStopped, .sessionEnded: false
+        }
+    }
+
     /// Notification types that mean Claude is blocked on you. Unknown or missing types count, so
     /// a Claude Code that doesn't send the field still works.
     static func notificationNeedsYou(_ event: ClaudeEvent) -> Bool {
         guard let type = event.notificationType else { return true }
         return ["permission_prompt", "idle_prompt", "elicitation_dialog"].contains(type)
+    }
+
+    /// Claude Code's reminder, a minute after a turn ends, that it's waiting for your next message.
+    static func isIdleReminder(_ event: ClaudeEvent) -> Bool {
+        if let type = event.notificationType { return type == "idle_prompt" }
+        return event.message?.localizedCaseInsensitiveContains("waiting for your input") == true
+    }
+
+    /// Ends turns the transcript shows are over though no Stop came: you interrupted it, it ended
+    /// on an API error, or the Stop was missed. A session only counts once it's been quiet a while,
+    /// which also waits out the moment between Claude's last message and its Stop hook. Returns
+    /// whether anything changed.
+    @discardableResult
+    public mutating func reconcileClaude(_ turns: [String: ClaudeTranscript.Turn], at now: Date) -> Bool {
+        var changed = false
+        for i in claudeSessions.indices {
+            var s = claudeSessions[i]
+            guard s.status != .done, now.timeIntervalSince(s.updatedAt) >= Self.claudeQuietAfter,
+                  case .ended(let at, let reply, let interrupted)? = turns[s.id],
+                  now.timeIntervalSince(at ?? .distantPast) >= Self.claudeQuietAfter else { continue }
+            s.status = .done
+            s.finishedAt = max(s.startedAt, min(at ?? now, now))
+            s.detail = nil
+            s.reply = interrupted ? "Interrupted" : reply
+            // You stopped it yourself, so it needn't catch your eye.
+            s.seen = interrupted
+            claudeSessions[i] = s
+            changed = true
+        }
+        return changed
     }
 
     /// First line of a prompt, whitespace collapsed, at most 80 characters.
@@ -380,5 +433,77 @@ public enum ClaudeDesktop {
             url.queryItems = [URLQueryItem(name: "session", value: session)]
         }
         return url.url
+    }
+}
+
+/// The end of a session's Claude Code transcript (JSONL, one entry a line). Claude Code sends no
+/// Stop hook when you interrupt a turn or it ends on an API error, so for a session that has gone
+/// quiet this tells whether the turn is still going.
+public enum ClaudeTranscript {
+    public enum Turn: Equatable, Sendable {
+        case running
+        /// `reply` is the start of Claude's last message, or of the error it ended on.
+        case ended(at: Date?, reply: String?, interrupted: Bool)
+    }
+
+    /// How much of the end of the file to read: the last few entries, even with a long one.
+    public static let tailLength = 256 * 1024
+
+    /// What the last entries in `tail` say about the turn, or nil if none of them tell. When the
+    /// tail was cut from a longer file, `fromStart` is false and its first, partial line is skipped.
+    public static func lastTurn(in tail: Data, fromStart: Bool) -> Turn? {
+        var lines = tail.split(separator: UInt8(ascii: "\n"))
+        if !fromStart, !lines.isEmpty { lines.removeFirst() }
+        // The Stop hooks ran, so the turn ended; the entry before it holds Claude's reply.
+        var stopHooksRan = false
+        var stoppedAt: Date?
+        for line in lines.reversed() {
+            guard let entry = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any] else { continue }
+            let time = (entry["timestamp"] as? String).flatMap(date)
+            let message = entry["message"] as? [String: Any]
+            switch entry["type"] as? String {
+            case "user":
+                if stopHooksRan { return .ended(at: stoppedAt, reply: nil, interrupted: false) }
+                if text(of: message).hasPrefix("[Request interrupted by user") {
+                    return .ended(at: time, reply: nil, interrupted: true)
+                }
+                return .running
+            case "assistant":
+                let reply = Optional(AppState.snippet(text(of: message))).flatMap { $0.isEmpty ? nil : $0 }
+                if stopHooksRan { return .ended(at: stoppedAt, reply: reply, interrupted: false) }
+                // A tool call still running, or a message still being written, has no other reason.
+                let reason = message?["stop_reason"] as? String
+                if entry["isApiErrorMessage"] as? Bool == true || ["end_turn", "stop_sequence", "refusal"].contains(reason) {
+                    return .ended(at: time, reply: reply, interrupted: false)
+                }
+                return .running
+            case "system" where entry["subtype"] as? String == "stop_hook_summary" && !stopHooksRan:
+                // A Stop hook can send Claude back to work.
+                if entry["preventedContinuation"] as? Bool == true { return .running }
+                stopHooksRan = true
+                stoppedAt = time
+            default:
+                continue
+            }
+        }
+        return stopHooksRan ? .ended(at: stoppedAt, reply: nil, interrupted: false) : nil
+    }
+
+    /// The text of a message, whose content is a string or a list of blocks.
+    static func text(of message: [String: Any]?) -> String {
+        switch message?["content"] {
+        case let text as String:
+            return text
+        case let blocks as [[String: Any]]:
+            return blocks.compactMap { $0["type"] as? String == "text" ? $0["text"] as? String : nil }.joined(separator: "\n")
+        default:
+            return ""
+        }
+    }
+
+    static func date(_ text: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: text) ?? ISO8601DateFormatter().date(from: text)
     }
 }
