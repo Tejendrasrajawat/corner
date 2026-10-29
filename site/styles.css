@@ -132,6 +132,8 @@ kbd {
 .nav nav { display: flex; gap: 26px; margin-right: auto; }
 .nav nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; transition: color 0.15s; }
 .nav nav a:hover { color: var(--text); }
+/* The GitHub link is also in the FAQ and footer, so it goes first when the bar gets tight. */
+@media (max-width: 960px) { .nav nav .nav-github { display: none; } }
 
 /* Hero */
 .hero { position: relative; padding: 84px 0 40px; overflow-x: clip; }

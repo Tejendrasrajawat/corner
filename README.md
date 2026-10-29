@@ -1,12 +1,51 @@
 # Corner
 
-A small macOS widget that sits in the top-left corner of the screen, just under the menu bar.
-Minimized it's a quarter circle showing one thing; click it and it opens into a card with
-clocks, timers, countdowns, a stopwatch and workday progress.
+A small macOS widget that lives in a corner of your screen. Minimized it's a quarter circle showing
+one thing: the time, a running timer, your next meeting, or whether Claude Code is working or
+needs you. Click it and it opens into a card with clocks, timers, countdowns, a stopwatch, to-dos
+and workday progress. When nothing needs the corner, a little pixel-art companion can live there
+instead of the clock.
+
+Free and open source (MIT). macOS 14 or later. Website: https://corner-mac.vercel.app
 
 | Minimized | Meeting soon | Time's up | Open |
 | --- | --- | --- | --- |
 | ![](docs/corner-timer-dark.png) | ![](docs/corner-meeting-dark.png) | ![](docs/corner-overtime-light.png) | ![](docs/card-dark.png) |
+
+| Ninja | Swordsman | Mage | Cat |
+| --- | --- | --- | --- |
+| ![](site/img/site-companion-ninja.gif) | ![](site/img/site-companion-swordsman.gif) | ![](site/img/site-companion-mage.gif) | ![](site/img/site-companion-cat.gif) |
+
+## Install
+
+```bash
+curl -fsSL https://corner-mac.vercel.app/install.sh | sh
+```
+
+The script downloads the release DMG, checks its SHA-256 against the one pinned in
+[`site/install.sh`](site/install.sh), copies Corner to Applications and opens it. Read it first if
+you like; it's short.
+
+Or [download the .dmg](https://corner-mac.vercel.app/download). Corner is ad-hoc signed, not
+notarized (no paid Apple Developer ID), so a browser download needs **Open Anyway** once in
+System Settings → Privacy & Security. Or build it yourself (below): you only need the Xcode
+Command Line Tools.
+
+## What it does
+
+- **One thing at a time in the corner**, picked by urgency: a timer in overtime, a meeting
+  starting, a countdown going off, Claude Code needing you, then whatever is running, then the
+  clock. Scroll over it to step through the rest.
+- **Quick add from anywhere** (⌥⌘T): `25m focus`, `6pm standup`, `fri 6pm release freeze`,
+  `every weekday 12:00 standup`, or anything else as a to-do.
+- **Your next meeting** from the Calendar app, with a Join button for Zoom, Meet and Teams links.
+- **Claude Code activity**: optional hooks show each session as working, needs you or done, named
+  after its chat, and a click opens the chat in the Claude app.
+- **Any corner of the screen**: drag it there. It can stay full size, shrink until you hover, tuck
+  into a dot so clicks pass through, or hide.
+- **Companions**: a ninja, a swordsman, a mage and a cat that climb the screen edge, nap while
+  you're away and wave when you point at them, for about 0.1% CPU.
+- **Seven themes**, 12- or 24-hour time, a second clock in another time zone, and a menu bar item.
 
 ### Companions
 
@@ -74,9 +113,10 @@ theme.
 
 ![](docs/themes-dark.png)
 
-## Build and install
+## Build from source
 
-Needs macOS 14+ and the Xcode Command Line Tools (full Xcode isn't required).
+Needs macOS 14+ and the Xcode Command Line Tools (`xcode-select --install`); full Xcode isn't
+required.
 
 ```bash
 ./scripts/build-app.sh --install   # builds, copies to ~/Applications/Corner.app, launches it
@@ -85,41 +125,6 @@ Needs macOS 14+ and the Xcode Command Line Tools (full Xcode isn't required).
 
 `Corner --snapshot <folder>` writes PNGs of every state using sample data (that's how the
 pictures above were made).
-
-## Website and releases
-
-The download page is a plain static site in `site/`, live at https://corner-mac.vercel.app
-(Vercel project `corner-mac`, personal scope `tejendras-projects`).
-
-```bash
-./scripts/package-release.sh            # universal Corner.app → site/downloads/Corner-<version>.dmg and Corner.dmg
-cd site && npx vercel deploy --prod     # publish
-```
-
-For a new version: bump `CFBundleShortVersionString` in `Resources/Info.plist`, run the release
-script, then update the version, size and SHA-256 it prints in `site/index.html` before deploying.
-`site/.vercelignore` keeps `.env*` and `.vercel` out of uploads; `vercel link` drops a token in
-`site/.env.local`, which must never be published.
-
-**Installing without the Gatekeeper prompt**: Corner is ad-hoc signed, not notarized, so a copy
-downloaded in a browser gets macOS's "Apple could not verify" warning until it's allowed in
-System Settings → Privacy & Security (the download page walks through it). `site/install.sh`
-(`curl -fsSL https://corner-mac.vercel.app/install.sh | sh`) avoids that: curl doesn't mark the
-file as quarantined. It installs the exact DMG named in its `version`/`sha256` lines, which the
-release script rewrites, and refuses a download whose SHA-256 doesn't match. Terminal installs
-don't show up in Vercel Analytics.
-
-**Analytics**: Vercel Web Analytics (Hobby, cookieless) is on for the project; see Analytics in the
-Vercel dashboard. Download buttons go to `/download`, which starts the file after a moment, so
-visits to `/download` are the download count (Hobby has no custom events). `/download?preview`
-shows that page without downloading.
-
-**Buy Me a Coffee**: the button is in `site/index.html` and `site/download.html` inside
-`<section class="support" hidden>`. To switch it on, put your page link in each `href` and
-remove `hidden`, then redeploy.
-
-The app is ad-hoc signed, not notarized, so first launch from a download needs **Open Anyway**
-in System Settings → Privacy & Security. An Apple Developer ID plus notarization would remove that.
 
 ## Using it
 
@@ -203,3 +208,50 @@ Whatever isn't a time, date or duration becomes the label.
 - State: `~/Library/Application Support/Corner/state.json`
 - `Sources/CornerKit`: model, quick-add parser, formatting; no AppKit, fully unit-tested
 - `Sources/Corner`: the panel, SwiftUI views, menu bar item, hotkey, notifications
+
+## Contributing
+
+Issues and pull requests are welcome. Before sending a change, run `./scripts/test.sh`, and
+`./scripts/build-app.sh` to make sure the release build compiles: the optimizer has crashed on code
+that debug builds accept. `CornerKit` holds the logic and is unit-tested; keep AppKit and
+CoreGraphics types out of its public API. For anything visual, `Corner --snapshot <folder>`
+renders every state to PNGs.
+
+## Maintainer notes: website and releases
+
+The download page is a plain static site in `site/`, live at https://corner-mac.vercel.app
+(Vercel project `corner-mac`, personal scope `tejendras-projects`).
+
+```bash
+./scripts/package-release.sh            # universal Corner.app → site/downloads/Corner-<version>.dmg and Corner.dmg
+cd site && npx vercel deploy --prod     # publish
+```
+
+For a new version: bump `CFBundleShortVersionString` in `Resources/Info.plist`, run the release
+script, then update the version, size and SHA-256 it prints in `site/index.html` before deploying.
+`site/.vercelignore` keeps `.env*` and `.vercel` out of uploads; `vercel link` drops a token in
+`site/.env.local`, which must never be published.
+
+**Installing without the Gatekeeper prompt**: Corner is ad-hoc signed, not notarized, so a copy
+downloaded in a browser gets macOS's "Apple could not verify" warning until it's allowed in
+System Settings → Privacy & Security (the download page walks through it). `site/install.sh`
+(`curl -fsSL https://corner-mac.vercel.app/install.sh | sh`) avoids that: curl doesn't mark the
+file as quarantined. It installs the exact DMG named in its `version`/`sha256` lines, which the
+release script rewrites, and refuses a download whose SHA-256 doesn't match. Terminal installs
+don't show up in Vercel Analytics.
+
+**Analytics**: Vercel Web Analytics (Hobby, cookieless) is on for the project; see Analytics in the
+Vercel dashboard. Download buttons go to `/download`, which starts the file after a moment, so
+visits to `/download` are the download count (Hobby has no custom events). `/download?preview`
+shows that page without downloading.
+
+**Buy Me a Coffee**: the button is in `site/index.html` and `site/download.html` inside
+`<section class="support" hidden>`. To switch it on, put your page link in each `href` and
+remove `hidden`, then redeploy.
+
+The app is ad-hoc signed, not notarized, so first launch from a download needs **Open Anyway**
+in System Settings → Privacy & Security. An Apple Developer ID plus notarization would remove that.
+
+## License
+
+MIT; see [LICENSE](LICENSE).
